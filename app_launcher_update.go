@@ -3,29 +3,22 @@ package main
 import (
 	"crypto/ed25519"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// The launcher's own update is served by the distribution server
-// (lethalmon_api), not GitHub — GitHub releases (see releases.go) only
-// supply the changelog/patch notes for this launcher.
-const launcherAPIBaseURL = "https://api.lethalmon-fangame.com/api/v1"
-const launcherUpdatePlatform = "windows"
-
 // launcherUpdatePublicKeyB64 is the public half of the ed25519 keypair used
 // to sign launcher update artifacts (see tools/updatesign). It only lets
 // this binary VERIFY that a downloaded update was signed by whoever holds
 // the matching private key — it can't be used to sign anything, so
-// embedding it here is safe. This protects against a compromised or
-// tampered distribution server pushing a modified executable; it's
+// embedding it here is safe. This protects against a compromised GitHub
+// account or a tampered release asset serving a modified executable; it's
 // independent of (and doesn't replace) Authenticode code signing, which is
 // about OS-level trust (SmartScreen/Defender), not update integrity.
 const launcherUpdatePublicKeyB64 = "E1rqwTfPYmMI0R0bMMR3NuMegdfDkUpoWxO6xZsMSS0="
@@ -87,62 +80,47 @@ type LauncherVersionCheck struct {
 	LatestVersion   string `json:"latestVersion"`
 	UpdateAvailable bool   `json:"updateAvailable"`
 	DownloadURL     string `json:"downloadUrl,omitempty"`
-	// SignatureURL is empty when the distribution server has no ".sig"
-	// companion file for this artifact (see tools/updatesign) — signature
-	// verification is then simply skipped, not treated as an error.
+	// SignatureURL is empty when the latest GitHub release has no ".sig"
+	// companion asset (see tools/updatesign) — signature verification is
+	// then simply skipped, not treated as an error.
 	SignatureURL string `json:"signatureUrl,omitempty"`
 }
 
-// GetLauncherVersionCheck asks the distribution server whether a newer
-// launcher build than the current one is available.
+// GetLauncherVersionCheck compares the running launcher's own version
+// against the latest release in launcherReleasesRepo, so the launcher can
+// prompt the user to update itself — the exact same GitHub-releases-based
+// approach GetGameVersionCheck uses for the game.
 func (a *App) GetLauncherVersionCheck() (LauncherVersionCheck, error) {
 	current := launcherVersion
 
-	endpoint := fmt.Sprintf(
-		"%s/downloads/%s/version-check?current=%s",
-		launcherAPIBaseURL, launcherUpdatePlatform, url.QueryEscape(current),
-	)
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(endpoint)
+	releases, err := fetchReleases(launcherReleasesRepo)
 	if err != nil {
 		return LauncherVersionCheck{}, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return LauncherVersionCheck{}, fmt.Errorf("version-check failed: HTTP %d", resp.StatusCode)
+	if len(releases) == 0 {
+		return LauncherVersionCheck{CurrentVersion: current}, nil
 	}
 
-	var check LauncherVersionCheck
-	if err := json.NewDecoder(resp.Body).Decode(&check); err != nil {
-		return LauncherVersionCheck{}, err
+	latestRelease := releases[0]
+	latest := trimVersion(latestRelease.TagName)
+
+	var downloadURL, signatureURL string
+	for _, asset := range latestRelease.Assets {
+		switch {
+		case strings.HasSuffix(asset.Name, ".exe.sig"):
+			signatureURL = asset.BrowserDownloadURL
+		case strings.HasSuffix(asset.Name, ".exe"):
+			downloadURL = asset.BrowserDownloadURL
+		}
 	}
 
-	check.CurrentVersion = current
-	return check, nil
-}
-
-// resolveDownloadURL turns a possibly relative downloadUrl (the
-// distribution server falls back to a path-only URL when it isn't
-// configured with its own public base URL) into an absolute one, resolved
-// against the same origin as launcherAPIBaseURL.
-func resolveDownloadURL(raw string) (string, error) {
-	parsed, err := url.Parse(raw)
-	if err != nil {
-		return "", err
-	}
-	if parsed.IsAbs() {
-		return raw, nil
-	}
-
-	base, err := url.Parse(launcherAPIBaseURL)
-	if err != nil {
-		return "", err
-	}
-
-	origin := &url.URL{Scheme: base.Scheme, Host: base.Host}
-	return origin.ResolveReference(parsed).String(), nil
+	return LauncherVersionCheck{
+		CurrentVersion:  current,
+		LatestVersion:   latest,
+		UpdateAvailable: current == "" || compareVersions(latest, current) > 0,
+		DownloadURL:     downloadURL,
+		SignatureURL:    signatureURL,
+	}, nil
 }
 
 const launcherUpdateProgressEvent = "launcher:update-progress"
@@ -176,41 +154,32 @@ func (a *App) UpdateLauncher() error {
 		return fmt.Errorf("no downloadable launcher update found")
 	}
 
-	downloadURL, err := resolveDownloadURL(check.DownloadURL)
-	if err != nil {
-		return err
-	}
-
 	tmpFile, err := os.CreateTemp("", "lethalmon-launcher-update-*.exe")
 	if err != nil {
 		return err
 	}
 	tmpPath := tmpFile.Name()
 
-	if err := a.downloadLauncherUpdate(downloadURL, tmpFile); err != nil {
+	if err := a.downloadLauncherUpdate(check.DownloadURL, tmpFile); err != nil {
 		tmpFile.Close()
 		os.Remove(tmpPath)
 		return err
 	}
 	tmpFile.Close()
 
-	// Signature verification is opportunistic: the distribution server only
-	// publishes a ".sig" file when one was uploaded (see tools/updatesign).
-	// If present, a bad signature aborts the update; if absent, we simply
-	// skip the check rather than blocking installs on optional metadata.
+	// Signature verification is opportunistic: the release only has a
+	// ".sig" asset when one was uploaded alongside the exe (see
+	// tools/updatesign). If present, a bad signature aborts the update; if
+	// absent, we simply skip the check rather than blocking installs on
+	// optional metadata.
 	if check.SignatureURL != "" {
-		signatureURL, err := resolveDownloadURL(check.SignatureURL)
-		if err != nil {
-			return err
-		}
-
 		tmpData, err := os.ReadFile(tmpPath)
 		if err != nil {
 			os.Remove(tmpPath)
 			return err
 		}
 
-		if err := verifyLauncherUpdateSignature(signatureURL, tmpData); err != nil {
+		if err := verifyLauncherUpdateSignature(check.SignatureURL, tmpData); err != nil {
 			os.Remove(tmpPath)
 			return err
 		}

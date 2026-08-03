@@ -12,9 +12,10 @@ import (
 
 const gameReleasesRepo = "bfloo/lethalmon-launcher"
 
-// launcherReleasesRepo only supplies the launcher's changelog/patch notes —
-// the actual update file is served by the distribution server instead (see
-// app_launcher_update.go), not GitHub releases.
+// launcherReleasesRepo supplies both the launcher's changelog/patch notes
+// and its self-update artifacts (the .exe and its .exe.sig, see
+// app_launcher_update.go) — a GitHub release's tag is the version, and its
+// attached assets are what gets downloaded and installed.
 const launcherReleasesRepo = "Otaku17/lethalmon-launcher-update"
 
 // ReleaseAsset is a single downloadable file attached to a GitHub release.
