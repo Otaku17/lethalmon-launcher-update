@@ -1,0 +1,155 @@
+{
+  "common": {
+    "onlinePlayers_one": "{{count}} giocatore online",
+    "onlinePlayers_other": "{{count}} giocatori online",
+    "offline": "Offline"
+  },
+  "actions": {
+    "play": "Gioca",
+    "launch": "Avvia il gioco",
+    "download": "Scarica",
+    "update": "Aggiorna",
+    "stop": "Ferma",
+    "reset": "Ripristina"
+  },
+  "install": {
+    "eyebrow": "// CONFIGURAZIONE_RICHIESTA",
+    "title": "Installa il gioco",
+    "description": "Scegli la cartella in cui installare il gioco.",
+    "placeholder": "Nessuna cartella selezionata",
+    "browse": "Sfoglia",
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "downloading": "DOWNLOAD IN CORSO",
+    "extracting": "ESTRAZIONE",
+    "done": "COMPLETATO"
+  },
+  "sidebar": {
+    "home": "Home",
+    "changelog": "Changelog",
+    "settings": "Impostazioni",
+    "discord": "Discord",
+    "instagram": "Instagram",
+    "x": "X (Twitter)",
+    "tiktok": "TikTok",
+    "googledrive": "Google Drive"
+  },
+  "home": {
+    "taglines": [
+      "Esplora pianeti ostili e misteriosi!",
+      "Fai tutto ciò che è in tuo potere per guadagnare la tua libertà.",
+      "Non fallire la tua missione... o ne subirai le conseguenze.",
+      "L'umanità ha bisogno di te. Sarai all'altezza?"
+    ],
+    "gameVersionLabel": "Versione del gioco:",
+    "notInstalled": "Non installato",
+    "connectionRequired": "Connessione internet richiesta",
+    "moreActions": "Altre azioni",
+    "updateKillConfirmTitle": "Chiudere il gioco per aggiornare?",
+    "updateKillConfirmDescription": "Una o più istanze del gioco sono attualmente in esecuzione. Continuando verranno chiuse immediatamente (i progressi non salvati andranno persi) prima di avviare l'aggiornamento.",
+    "launcherUpdate": {
+      "title": "AGGIORNAMENTO DISPONIBILE",
+      "available": "È disponibile una nuova versione del launcher ({{version}}).",
+      "downloading": "DOWNLOAD IN CORSO",
+      "installing": "INSTALLAZIONE"
+    }
+  },
+  "changelog": {
+    "title": "Changelog",
+    "disclaimer": "Disponibile solo in inglese",
+    "description": "Scopri i recenti aggiornamenti e novità del gioco.",
+    "empty": "Nessuna nota di rilascio per ora.",
+    "loading": "Caricamento delle note di rilascio...",
+    "error": "Impossibile recuperare le note di rilascio.",
+    "offline": "Connessione internet richiesta per visualizzare le note di rilascio.",
+    "tabs": {
+      "game": "Patch Game",
+      "launcher": "Patch Launcher"
+    },
+    "groupLatest": "Ultima patch",
+    "groupPrevious": "Patch precedente",
+    "groupEarlier": "Successivamente"
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "tabs": {
+      "general": "Generale",
+      "game": "Gioco",
+      "launcher": "Launcher",
+      "about": "Info"
+    },
+    "general": {
+      "language": "Lingua",
+      "languageDescription": "Cambia la lingua utilizzata nell'interfaccia del launcher.",
+      "gpu": "Scheda grafica rilevata",
+      "forceGpu": "Forza il gioco a usarla",
+      "gpuDescription": "Forza il gioco a usare questa scheda grafica dedicata invece della GPU integrata, per evitare problemi di prestazioni su alcune configurazioni.",
+      "gpuNotFound": "Nessuna rilevata",
+      "multiInstance": "Consenti multi-istanza",
+      "multiInstanceDescription": "Permette di avviare più istanze del gioco contemporaneamente. Può causare problemi ed errori sui salvataggi se più istanze scrivono nello stesso momento.",
+      "reset": "Ripristina le impostazioni",
+      "resetDescription": "Ripristina lingua, GPU forzata, multi-istanza e aggiornamenti automatici ai valori predefiniti.",
+      "empty": "Nessuna impostazione disponibile per ora."
+    },
+    "game": {
+      "resolution": "Risoluzione",
+      "resolutionDescription": "Imposta la risoluzione di visualizzazione del gioco (un multiplo di 320x240).",
+      "language": "Lingua del gioco",
+      "languageDescription": "Lingua usata nel gioco (indipendente da quella del launcher).",
+      "volume": "Volume",
+      "volumeDescription": "Regola il volume audio generale del gioco.",
+      "autoSave": "Salvataggio automatico",
+      "autoSaveDescription": "Salva automaticamente i tuoi progressi mentre giochi.",
+      "reset": "Ripristina le impostazioni di gioco",
+      "resetDescription": "Ripristina risoluzione, lingua, volume e salvataggio automatico ai valori predefiniti.",
+      "notInstalledNotice": "Il gioco non è installato: queste opzioni saranno modificabili una volta installato il gioco.",
+      "restartRequiredNotice": "Il gioco è attualmente in esecuzione: le modifiche qui sotto avranno effetto solo al prossimo riavvio del gioco.",
+      "installPath": "Cartella di installazione",
+      "installPathDescription": "Scegli dove installare il gioco. Se esiste già un'installazione, verrà spostata nella nuova cartella.",
+      "installPathPendingMove": "Spostare l'installazione in: {{path}}?",
+      "movePathConfirm": "Sposta",
+      "openFolderAction": "Apri la cartella del gioco",
+      "installPathMoveError": "Spostamento fallito: {{error}}",
+      "migrationProgressLabel": "SPOSTAMENTO IN CORSO",
+      "uninstall": "Disinstalla il gioco",
+      "uninstallAction": "Disinstalla",
+      "uninstallDescription": "Rimuove tutti i file del gioco installati su questo computer.",
+      "uninstallConfirmTitle": "Disinstallare il gioco?",
+      "uninstallConfirmDescription": "Questa azione elimina definitivamente tutti i file del gioco installati. L'azione è irreversibile.",
+      "uninstallKillConfirmTitle": "Chiudere il gioco per disinstallare?",
+      "uninstallKillConfirmDescription": "Una o più istanze del gioco sono attualmente in esecuzione. Continuando verranno chiuse immediatamente (i progressi non salvati andranno persi) prima di procedere con la disinstallazione.",
+      "empty": "Nessuna impostazione disponibile per ora."
+    },
+    "launcher": {
+      "currentVersion": "Versione attuale",
+      "latestVersion": "Ultima versione disponibile",
+      "platform": "Piattaforma",
+      "tech": "Tecnologie",
+      "autoUpdate": "Aggiornamenti automatici",
+      "autoUpdateOn": "ATTIVI",
+      "autoUpdateOff": "DISATTIVI",
+      "autoUpdateDescription": "Scarica e installa automaticamente gli aggiornamenti del launcher non appena disponibili."
+    },
+    "about": {
+      "heading": "Il progetto Lethalmon",
+      "paragraphs": [
+        "Lethalmon è un fangame Pokémon ispirato al gioco indipendente Lethal Company.",
+        "Riprende alcune delle sue meccaniche, mantenendo l'essenza di Pokémon: cattura e combattimento.",
+        "Il tuo obiettivo: esplorare pianeti sconosciuti, catturare Pokémon e prepararti ad affrontare Capipalestra scelti casualmente ad ogni partita.",
+        "Lethalmon offre un nuovo modo di riscoprire le tue creature preferite, con una forte attenzione alla rigiocabilità!",
+        "Questo launcher è stato progettato per permetterti di mantenere il gioco aggiornato facilmente e seguirne l'evoluzione senza sforzi."
+      ],
+      "teamTitle": "Il team",
+      "contributorsTitle": "Contributi principali",
+      "roles": {
+        "creator_dev": "Dev & Creatore di Lethalmon",
+        "dev": "Dev",
+        "main_contributor": "Contributore principale",
+        "designer_illustrator": "Designer & illustratrice",
+        "team_builder": "Team Builder",
+        "english_translator": "Traduzioni in inglese",
+        "pixel_artist": "Pixel Artist"
+      }
+    }
+  }
+}

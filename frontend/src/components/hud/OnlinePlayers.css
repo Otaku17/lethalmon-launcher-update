@@ -1,0 +1,10 @@
+.hud-online-players{
+  display: flex;
+  align-items: center;
+}
+
+.hud-online-players .hud-badge{
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 12px;
+}

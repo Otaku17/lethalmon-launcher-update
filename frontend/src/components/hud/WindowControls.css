@@ -1,0 +1,57 @@
+.hud-wincontrols{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-wincontrols__btn{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: rgba(77,238,234,0.06);
+  border: 1px solid var(--panel-border);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color .2s ease, border-color .2s ease, background .2s ease;
+}
+
+.hud-wincontrols__btn svg{ width: 14px; height: 14px; }
+
+.hud-wincontrols__btn:hover{
+  color: var(--cyan);
+  border-color: var(--cyan-soft);
+  background: rgba(77,238,234,0.14);
+}
+
+.hud-wincontrols__btn:focus-visible{
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.hud-wincontrols__btn--close:hover{
+  color: #fff;
+  border-color: var(--magenta);
+  background: rgba(255,61,129,0.55);
+}
+
+.hud-wincontrols--mac{
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.hud-wincontrols__dot{
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: filter .2s ease;
+}
+
+.hud-wincontrols__dot:hover{ filter: brightness(1.2); }
+
+.hud-wincontrols__dot--close{ background: var(--magenta); }
+.hud-wincontrols__dot--min{ background: var(--amber); }

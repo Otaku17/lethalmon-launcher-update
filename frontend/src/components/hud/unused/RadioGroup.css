@@ -1,0 +1,47 @@
+.hud-radio-group{ display:flex; flex-direction:column; gap:12px; }
+
+.hud-radio{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hud-radio__input{ position:absolute; opacity:0; width:0; height:0; }
+
+.hud-radio__dot{
+  width: 20px; height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(77,238,234,0.04);
+  border: 2px solid var(--cyan-soft);
+  position: relative;
+  transition: border-color .2s ease;
+}
+
+.hud-radio__dot::after{
+  content:"";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+  opacity: 0;
+  transform: scale(.4);
+  transition: opacity .15s ease, transform .15s ease;
+}
+
+.hud-radio__input:checked + .hud-radio__dot{ border-color: var(--cyan); }
+.hud-radio__input:checked + .hud-radio__dot::after{ opacity: 1; transform: scale(1); }
+
+.hud-radio__input:focus-visible + .hud-radio__dot{
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+.hud-radio__label{
+  font-size: 13px;
+  letter-spacing: .5px;
+  color: var(--text);
+}

@@ -1,0 +1,34 @@
+.hud-captionbar{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.hud-captionbar__label{
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  white-space: nowrap;
+}
+
+.hud-captionbar__rule{
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(90deg, var(--cyan-soft), transparent);
+}
+
+.hud-captionbar__extra{
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.hud-captionbar--warn .hud-captionbar__label{ color: var(--amber); }
+.hud-captionbar--warn .hud-captionbar__rule{ background: linear-gradient(90deg, rgba(255,184,77,0.35), transparent); }
+
+.hud-captionbar--danger .hud-captionbar__label{ color: var(--magenta); }
+.hud-captionbar--danger .hud-captionbar__rule{ background: linear-gradient(90deg, rgba(255,61,129,0.35), transparent); }

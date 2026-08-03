@@ -1,0 +1,15 @@
+.hud-game-version-text{
+  position: absolute;
+  top: 16px;
+  right: 40px;
+  z-index: 2;
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  opacity: 0.75;
+}
+
+.hud-game-version-text.is-warn{
+  color: var(--amber);
+}

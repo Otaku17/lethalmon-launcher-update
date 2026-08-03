@@ -1,0 +1,75 @@
+.hud-path{
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  background: rgba(77,238,234,0.04);
+  border: 2px solid var(--panel-border);
+  transition: border-color .2s ease;
+}
+
+.hud-path:focus-within{ border-color: var(--cyan-soft); }
+
+.hud-path.is-disabled{ opacity: .5; }
+
+.hud-path__value{
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 11px 14px;
+  overflow: hidden;
+}
+
+.hud-path__text{
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  /* Astuce : en RTL avec un alignement gauche, l'ellipse mange le début
+     du chemin et garde la fin (le nom de fichier/dossier) visible. */
+  direction: rtl;
+  text-align: left;
+  unicode-bidi: plaintext;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: .3px;
+  color: var(--text);
+}
+
+.hud-path__placeholder{
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: .3px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.hud-path__browse{
+  flex-shrink: 0;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(77,238,234,0.05);
+  border: none;
+  border-left: 2px solid var(--panel-border);
+  color: var(--cyan);
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+
+.hud-path__browse svg{ width: 16px; height: 16px; }
+
+.hud-path__browse:hover:not(:disabled){
+  background: rgba(77,238,234,0.16);
+  border-left-color: var(--cyan-soft);
+  color: #eaf6f8;
+}
+
+.hud-path__browse:focus-visible{
+  outline: 2px solid var(--cyan);
+  outline-offset: -2px;
+}
+
+.hud-path__browse:disabled{ cursor: not-allowed; }

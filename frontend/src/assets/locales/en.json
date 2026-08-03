@@ -1,0 +1,155 @@
+{
+  "common": {
+    "onlinePlayers_one": "{{count}} player online",
+    "onlinePlayers_other": "{{count}} players online",
+    "offline": "Offline"
+  },
+  "actions": {
+    "play": "Play",
+    "launch": "Launch the game",
+    "download": "Download",
+    "update": "Update",
+    "stop": "Stop",
+    "reset": "Reset"
+  },
+  "install": {
+    "eyebrow": "// SETUP_REQUIRED",
+    "title": "Install the game",
+    "description": "Choose the folder where the game should be installed.",
+    "placeholder": "No folder selected",
+    "browse": "Browse",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "downloading": "DOWNLOADING",
+    "extracting": "EXTRACTING",
+    "done": "DONE"
+  },
+  "sidebar": {
+    "home": "Home",
+    "changelog": "Changelog",
+    "settings": "Settings",
+    "discord": "Discord",
+    "instagram": "Instagram",
+    "x": "X (Twitter)",
+    "tiktok": "TikTok",
+    "googledrive": "Google Drive"
+  },
+  "home": {
+    "taglines": [
+      "Explore hostile and mysterious planets!",
+      "Do everything in your power to earn your freedom.",
+      "Do not fail your mission... or face the consequences.",
+      "Humanity needs you. Will you rise to the occasion?"
+    ],
+    "gameVersionLabel": "Game version:",
+    "notInstalled": "Not installed",
+    "connectionRequired": "Internet connection required",
+    "moreActions": "More actions",
+    "updateKillConfirmTitle": "Close the game to update?",
+    "updateKillConfirmDescription": "One or more game instances are currently running. Continuing will close them immediately (unsaved progress will be lost) before starting the update.",
+    "launcherUpdate": {
+      "title": "UPDATE AVAILABLE",
+      "available": "A new launcher version ({{version}}) is available.",
+      "downloading": "DOWNLOADING",
+      "installing": "INSTALLING"
+    }
+  },
+  "changelog": {
+    "title": "Changelog",
+    "disclaimer": "English only",
+    "description": "Check out the latest updates and additions to the game.",
+    "empty": "No release notes yet.",
+    "loading": "Loading release notes...",
+    "error": "Couldn't fetch release notes.",
+    "offline": "Internet connection required to view release notes.",
+    "tabs": {
+      "game": "Patch Game",
+      "launcher": "Patch Launcher"
+    },
+    "groupLatest": "Latest patch",
+    "groupPrevious": "Previous patch",
+    "groupEarlier": "Then"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "general": "General",
+      "game": "Game",
+      "launcher": "Launcher",
+      "about": "About"
+    },
+    "general": {
+      "language": "Language",
+      "languageDescription": "Changes the language used across the launcher interface.",
+      "gpu": "Detected graphics card",
+      "forceGpu": "Force the game to use it",
+      "gpuDescription": "Forces the game to use this dedicated graphics card instead of the integrated GPU, to avoid performance issues on some setups.",
+      "gpuNotFound": "None detected",
+      "multiInstance": "Allow multiple instances",
+      "multiInstanceDescription": "Lets you launch several instances of the game at once. May cause issues and save file errors if multiple instances write at the same time.",
+      "reset": "Reset settings",
+      "resetDescription": "Resets language, forced GPU, multi-instance and automatic updates back to their default values.",
+      "empty": "No settings available yet."
+    },
+    "game": {
+      "resolution": "Resolution",
+      "resolutionDescription": "Sets the game's display resolution (a multiple of 320x240).",
+      "language": "Game language",
+      "languageDescription": "Language used in the game (independent from the launcher's language).",
+      "volume": "Volume",
+      "volumeDescription": "Sets the overall sound volume of the game.",
+      "autoSave": "Auto-save",
+      "autoSaveDescription": "Automatically saves your progress while you play.",
+      "reset": "Reset game settings",
+      "resetDescription": "Resets resolution, language, volume and auto-save back to their default values.",
+      "notInstalledNotice": "The game isn't installed: these options will become editable once the game is installed.",
+      "restartRequiredNotice": "The game is currently running: the changes below will only take effect the next time the game restarts.",
+      "installPath": "Install folder",
+      "installPathDescription": "Choose where the game is installed. If an installation already exists, it will be moved to the new folder.",
+      "installPathPendingMove": "Move the installation to: {{path}}?",
+      "movePathConfirm": "Move",
+      "openFolderAction": "Open game folder",
+      "installPathMoveError": "Move failed: {{error}}",
+      "migrationProgressLabel": "MOVING",
+      "uninstall": "Uninstall the game",
+      "uninstallAction": "Uninstall",
+      "uninstallDescription": "Removes all game files installed on this computer.",
+      "uninstallConfirmTitle": "Uninstall the game?",
+      "uninstallConfirmDescription": "This permanently deletes all installed game files. This action cannot be undone.",
+      "uninstallKillConfirmTitle": "Close the game to uninstall?",
+      "uninstallKillConfirmDescription": "One or more game instances are currently running. Continuing will close them immediately (unsaved progress will be lost) before proceeding with the uninstall.",
+      "empty": "No settings available yet."
+    },
+    "launcher": {
+      "currentVersion": "Current version",
+      "latestVersion": "Latest version available",
+      "platform": "Platform",
+      "tech": "Technologies",
+      "autoUpdate": "Automatic updates",
+      "autoUpdateOn": "ON",
+      "autoUpdateOff": "OFF",
+      "autoUpdateDescription": "Automatically downloads and installs launcher updates as soon as they're available."
+    },
+    "about": {
+      "heading": "The Lethalmon project",
+      "paragraphs": [
+        "Lethalmon is a Pokémon fangame inspired by the indie game Lethal Company.",
+        "It borrows some of its mechanics while keeping the essence of Pokémon: capturing and battling.",
+        "Your goal: explore unknown planets, capture Pokémon and get ready to face Gym Leaders picked at random each run.",
+        "Lethalmon offers a new way to rediscover your favorite creatures, with a strong focus on replayability!",
+        "This launcher was built to let you keep the game up to date easily and follow its development effortlessly."
+      ],
+      "teamTitle": "The team",
+      "contributorsTitle": "Major contributions",
+      "roles": {
+        "creator_dev": "Dev & Creator of Lethalmon",
+        "dev": "Dev",
+        "main_contributor": "Main contributor",
+        "designer_illustrator": "Designer & illustrator",
+        "team_builder": "Team Builder",
+        "english_translator": "English translations",
+        "pixel_artist": "Pixel Artist"
+      }
+    }
+  }
+}

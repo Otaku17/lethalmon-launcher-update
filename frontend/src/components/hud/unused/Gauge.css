@@ -1,0 +1,29 @@
+.hud-gauge{ display: flex; align-items: center; gap: 20px; }
+
+.hud-gauge__figure{ position: relative; width: 96px; height: 96px; flex-shrink: 0; }
+
+.hud-gauge__figure svg{ width: 96px; height: 96px; transform: rotate(-90deg); }
+
+.hud-gauge__track{ fill: none; stroke: var(--panel-border); stroke-width: 8; }
+
+.hud-gauge__fill{
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 8;
+  stroke-linecap: square;
+  filter: drop-shadow(0 0 6px rgba(77,238,234,.6));
+  transition: stroke-dashoffset .4s ease;
+}
+
+.hud-gauge__readout{
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+
+.hud-gauge__readout strong{ font-family: var(--display); font-size: 20px; color: #eaf6f8; }
+.hud-gauge__readout span{ font-size: 9px; letter-spacing: 1.5px; color: var(--text-dim); }
+
+.hud-gauge__meta{ display: flex; flex-direction: column; gap: 6px; }
+.hud-gauge__meta-label{ font-size: 11px; letter-spacing: 2px; color: var(--text-dim); }
+.hud-gauge__meta-value{ font-family: var(--display); font-size: 13px; color: var(--cyan); }

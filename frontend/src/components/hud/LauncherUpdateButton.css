@@ -1,0 +1,50 @@
+.titlebar-update-btn .hud-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-width: 1px;
+  justify-content: center;
+}
+
+.titlebar-update-btn .hud-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.launcher-update-alert {
+  position: fixed;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  width: max-content;
+  max-width: calc(100vw - 48px);
+}
+
+.launcher-update-alert .hud-alert__text {
+  white-space: nowrap;
+}
+
+.launcher-update-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 8, 13, 0.85);
+}
+
+.launcher-update-box {
+  width: 100%;
+  max-width: 380px;
+  padding: 26px;
+  background: var(--panel);
+  border: 2px solid var(--cyan-soft);
+}
+
+.launcher-update-error {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: var(--magenta);
+}

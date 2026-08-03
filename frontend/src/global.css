@@ -1,0 +1,30 @@
+/* HUD CONTROLS — global.css
+   Importer une seule fois à la racine de l'app (ex: index.jsx / App.jsx).
+   Ce fichier ne contient QUE les couleurs, polices et resets partagés.
+   Chaque composant a son propre CSS pour le reste. */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;900&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg: #05080d;
+  --panel: #0a1119;
+  --panel-border: rgba(93, 226, 255, 0.16);
+  --cyan: rgb(77, 238, 234);
+  --cyan-soft: rgba(77, 238, 234, 0.35);
+  --magenta: #ff3d81;
+  --amber: #ffb84d;
+  --text: #c3d4e0;
+  --text-dim: #55707f;
+  --display: 'Orbitron', sans-serif;
+  --mono: 'Share Tech Mono', monospace;
+}
+
+.hud-root,
+.hud-root * {
+  box-sizing: border-box;
+}
+
+.hud-root {
+  color: var(--text);
+  font-family: var(--mono);
+}

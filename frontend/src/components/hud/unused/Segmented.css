@@ -1,0 +1,32 @@
+.hud-segmented{
+  display: inline-flex;
+  background: rgba(77,238,234,0.04);
+  border: 2px solid var(--cyan-soft);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.hud-segmented__input{ position: absolute; opacity: 0; width: 0; height: 0; }
+
+.hud-segmented__opt{
+  padding: 8px 18px;
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease;
+  display: inline-block;
+}
+
+.hud-segmented__input:checked + .hud-segmented__opt{
+  background: var(--cyan);
+  color: #05080d;
+}
+
+.hud-segmented__input:focus-visible + .hud-segmented__opt{
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}

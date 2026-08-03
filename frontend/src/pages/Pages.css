@@ -1,0 +1,124 @@
+.page {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.home-logo-wrap {
+  position: relative;
+  width: min(680px, 85%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -30px;
+}
+
+.home-logo-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -15% -8%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(78, 239, 236, 0.377) ,
+    transparent 70%
+  );
+  animation: home-logo-pulse 2.6s ease-in-out infinite;
+  z-index: 0;
+}
+
+.home-logo {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+}
+
+@keyframes home-logo-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+.page-placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.home-actions {
+  position: absolute;
+  right: 40px;
+  bottom: 40px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.home-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-offline-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  color: var(--amber);
+  background: rgba(255, 184, 77, 0.06);
+  border: 2px solid rgba(255, 184, 77, 0.45);
+}
+
+.home-download-error {
+  position: absolute;
+  right: 40px;
+  bottom: 90px;
+  z-index: 2;
+  max-width: 320px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--magenta);
+  text-align: right;
+}
+
+.home-download-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 8, 13, 0.85);
+}
+
+.home-download-box {
+  width: 100%;
+  max-width: 380px;
+  padding: 26px;
+  background: var(--panel);
+  border: 2px solid var(--cyan-soft);
+}
+

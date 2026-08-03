@@ -1,0 +1,36 @@
+.easter-egg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 8, 13, 0.85);
+}
+
+.easter-egg-box {
+  position: relative;
+  padding: 16px;
+  background: var(--panel);
+  border: 2px solid var(--cyan-soft);
+  box-shadow: 0 0 24px rgba(77, 238, 234, 0.15);
+}
+
+.easter-egg-canvas {
+  display: block;
+  image-rendering: pixelated;
+  background: rgba(77, 238, 234, 0.03);
+  cursor: pointer;
+}
+
+.easter-egg-close {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+}
+
+.easter-egg-box button.easter-egg-close {
+  background: var(--panel) !important;
+  opacity: 1 !important;
+  color: var(--text);
+}

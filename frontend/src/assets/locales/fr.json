@@ -1,0 +1,155 @@
+{
+  "common": {
+    "onlinePlayers_one": "{{count}} joueur en ligne",
+    "onlinePlayers_other": "{{count}} joueurs en ligne",
+    "offline": "Hors ligne"
+  },
+  "actions": {
+    "play": "Jouer",
+    "launch": "Lancer le jeu",
+    "download": "Télécharger",
+    "update": "Mettre à jour",
+    "stop": "Arrêter",
+    "reset": "Réinitialiser"
+  },
+  "install": {
+    "eyebrow": "// CONFIGURATION_REQUISE",
+    "title": "Installer le jeu",
+    "description": "Choisissez le dossier dans lequel installer le jeu.",
+    "placeholder": "Aucun dossier sélectionné",
+    "browse": "Parcourir",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "downloading": "TÉLÉCHARGEMENT",
+    "extracting": "EXTRACTION",
+    "done": "TERMINÉ"
+  },
+  "sidebar": {
+    "home": "Home",
+    "changelog": "Changelog",
+    "settings": "Paramètres",
+    "discord": "Discord",
+    "instagram": "Instagram",
+    "x": "X (Twitter)",
+    "tiktok": "TikTok",
+    "googledrive": "Google Drive"
+  },
+  "home": {
+    "taglines": [
+      "Explorez des planètes hostiles et mystérieuses !",
+      "Faites tout ce qui est en votre pouvoir pour gagner votre liberté.",
+      "N'échouez pas dans votre mission... ou vous en subirez les conséquences.",
+      "L'humanité a besoin de vous. Serez-vous à la hauteur ?"
+    ],
+    "gameVersionLabel": "Version du jeu :",
+    "notInstalled": "Non installé",
+    "connectionRequired": "Connexion internet requise",
+    "moreActions": "Plus d'actions",
+    "updateKillConfirmTitle": "Fermer le jeu pour mettre à jour ?",
+    "updateKillConfirmDescription": "Une ou plusieurs instances du jeu sont en cours d'exécution. Continuer va les fermer immédiatement (progression non sauvegardée perdue) avant de lancer la mise à jour.",
+    "launcherUpdate": {
+      "title": "MISE À JOUR DISPONIBLE",
+      "available": "Une nouvelle version du launcher ({{version}}) est disponible.",
+      "downloading": "TÉLÉCHARGEMENT",
+      "installing": "INSTALLATION"
+    }
+  },
+  "changelog": {
+    "title": "Changelog",
+    "disclaimer": "Disponible en anglais uniquement",
+    "description": "Découvrez les dernières mises à jour et nouveautés du jeu.",
+    "empty": "Aucune note de version pour le moment.",
+    "loading": "Chargement des notes de version...",
+    "error": "Impossible de récupérer les notes de version.",
+    "offline": "Connexion internet requise pour voir les notes de version.",
+    "tabs": {
+      "game": "Patch Game",
+      "launcher": "Patch Launcher"
+    },
+    "groupLatest": "Dernier patch",
+    "groupPrevious": "Patch précédent",
+    "groupEarlier": "Ensuite"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "tabs": {
+      "general": "Général",
+      "game": "Jeu",
+      "launcher": "Launcher",
+      "about": "À propos"
+    },
+    "general": {
+      "language": "Langue",
+      "languageDescription": "Change la langue utilisée dans l'interface du launcher.",
+      "gpu": "Carte graphique détectée",
+      "forceGpu": "Forcer son utilisation par le jeu",
+      "gpuDescription": "Force le jeu à utiliser cette carte graphique dédiée plutôt que le GPU intégré, pour éviter les problèmes de performance sur certaines configurations.",
+      "gpuNotFound": "Aucune détectée",
+      "multiInstance": "Autoriser le multi-instance",
+      "multiInstanceDescription": "Permet de lancer plusieurs instances du jeu en même temps. Peut avoir des répercussions et provoquer des erreurs sur les sauvegardes si plusieurs instances écrivent en même temps.",
+      "reset": "Réinitialiser les paramètres",
+      "resetDescription": "Remet la langue, le GPU forcé, le multi-instance et les mises à jour automatiques à leurs valeurs par défaut.",
+      "empty": "Aucun paramètre disponible pour le moment."
+    },
+    "game": {
+      "resolution": "Résolution",
+      "resolutionDescription": "Définit la résolution d'affichage du jeu (multiple de 320x240).",
+      "language": "Langue du jeu",
+      "languageDescription": "Langue utilisée dans le jeu (indépendante de celle du launcher).",
+      "volume": "Volume",
+      "volumeDescription": "Règle le volume sonore général du jeu.",
+      "autoSave": "Sauvegarde automatique",
+      "autoSaveDescription": "Sauvegarde automatiquement votre progression pendant que vous jouez.",
+      "reset": "Réinitialiser les paramètres du jeu",
+      "resetDescription": "Remet la résolution, la langue, le volume et la sauvegarde automatique à leurs valeurs par défaut.",
+      "notInstalledNotice": "Le jeu n'est pas installé : ces options seront modifiables une fois le jeu installé.",
+      "restartRequiredNotice": "Le jeu est actuellement lancé : les changements ci-dessous ne prendront effet qu'au prochain redémarrage du jeu.",
+      "installPath": "Dossier d'installation",
+      "installPathDescription": "Choisissez où le jeu est installé. Si une installation existe déjà, elle sera déplacée vers le nouveau dossier.",
+      "installPathPendingMove": "Déplacer l'installation vers : {{path}} ?",
+      "movePathConfirm": "Déplacer",
+      "openFolderAction": "Ouvrir le dossier du jeu",
+      "installPathMoveError": "Échec du déplacement : {{error}}",
+      "migrationProgressLabel": "DÉPLACEMENT EN COURS",
+      "uninstall": "Désinstaller le jeu",
+      "uninstallAction": "Désinstaller",
+      "uninstallDescription": "Supprime tous les fichiers du jeu installés sur cet ordinateur.",
+      "uninstallConfirmTitle": "Désinstaller le jeu ?",
+      "uninstallConfirmDescription": "Cette action supprime définitivement tous les fichiers du jeu installés. Cette action est irréversible.",
+      "uninstallKillConfirmTitle": "Fermer le jeu pour désinstaller ?",
+      "uninstallKillConfirmDescription": "Une ou plusieurs instances du jeu sont actuellement en cours d'exécution. Continuer va les fermer immédiatement (progression non sauvegardée perdue) avant de procéder à la désinstallation.",
+      "empty": "Aucun paramètre disponible pour le moment."
+    },
+    "launcher": {
+      "currentVersion": "Version actuelle",
+      "latestVersion": "Dernière version disponible",
+      "platform": "Plateforme",
+      "tech": "Technologies",
+      "autoUpdate": "Mises à jour automatiques",
+      "autoUpdateOn": "ACTIVÉES",
+      "autoUpdateOff": "DÉSACTIVÉES",
+      "autoUpdateDescription": "Télécharge et installe automatiquement les mises à jour du launcher dès qu'elles sont disponibles."
+    },
+    "about": {
+      "heading": "Le projet Lethalmon",
+      "paragraphs": [
+        "Lethalmon est un fangame Pokémon inspiré du jeu indépendant Lethal Company.",
+        "Il en reprend certaines mécaniques, tout en conservant l’essence de Pokémon : la capture et le combat.",
+        "Votre objectif : explorer des planètes inconnues, capturer des Pokémon et vous préparer à affronter des Champions d’Arène sélectionnés aléatoirement à chaque partie.",
+        "Lethalmon propose une nouvelle façon de redécouvrir vos créatures favorites, avec un fort accent sur la rejouabilité !",
+        "Ce launcher a été conçu pour vous permettre de garder le jeu à jour facilement et de suivre son évolution en toute simplicité."
+      ],
+      "teamTitle": "L'équipe",
+      "contributorsTitle": "Contributions majeures",
+      "roles": {
+        "creator_dev": "Développeur & Créateur de Lethalmon",
+        "dev": "Développeur",
+        "main_contributor": "Contributeur principal",
+        "designer_illustrator": "Designer & illustratrice",
+        "team_builder": "Team Builder",
+        "english_translator": "Traductions anglaises",
+        "pixel_artist": "Pixel Artist"
+      }
+    }
+  }
+}

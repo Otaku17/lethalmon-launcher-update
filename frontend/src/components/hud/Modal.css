@@ -1,0 +1,131 @@
+.hud-modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(5,8,13,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 1100;
+}
+
+.hud-modal-backdrop.is-open{ opacity: 1; pointer-events: auto; }
+
+.hud-modal{
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  max-height: 85vh;
+  background: var(--panel);
+  border: 2px solid var(--cyan-soft);
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  transform: translateY(12px);
+  transition: transform .2s ease;
+}
+
+.hud-modal--medium{
+  max-width: 460px;
+}
+
+.hud-modal--wide{
+  max-width: 640px;
+}
+
+.hud-modal-backdrop.is-open .hud-modal{ transform: translateY(0); }
+
+.hud-modal__close{
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(77,238,234,0.06);
+  border: 1px solid var(--panel-border);
+  color: var(--text-dim);
+  cursor: pointer;
+  z-index: 1;
+  transition: color .2s ease, border-color .2s ease, background .2s ease;
+}
+
+.hud-modal__close svg{ width: 14px; height: 14px; }
+
+.hud-modal__close:hover{
+  color: var(--cyan);
+  border-color: var(--cyan-soft);
+  background: rgba(77,238,234,0.14);
+}
+
+.hud-modal__close:focus-visible{
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.hud-modal__body{
+  padding: 26px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  text-align: left;
+}
+
+.hud-modal__body--with-close{
+  padding-right: 52px;
+}
+
+/* Discreet scrollbar, Firefox + WebKit */
+.hud-modal__body{
+  scrollbar-width: thin;
+  scrollbar-color: var(--cyan-soft) transparent;
+}
+
+.hud-modal__body::-webkit-scrollbar{ width: 6px; }
+.hud-modal__body::-webkit-scrollbar-track{ background: transparent; }
+.hud-modal__body::-webkit-scrollbar-thumb{
+  background: var(--cyan-soft);
+}
+.hud-modal__body::-webkit-scrollbar-thumb:hover{ background: var(--cyan); }
+
+.hud-modal__eyebrow{
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 8px;
+}
+
+.hud-modal__title{
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 1.5px;
+  color: #eaf6f8;
+  margin: 0 0 12px;
+  text-align: left;
+}
+
+.hud-modal__text{
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  text-align: left;
+}
+
+.hud-modal__actions{
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 16px 26px;
+  border-top: 1px solid var(--panel-border);
+  flex: 0 0 auto;
+}
+
+.hud-modal__actions .hud-btn{ padding: 10px 20px; font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce){
+  .hud-modal, .hud-modal-backdrop{ transition: none; }
+}

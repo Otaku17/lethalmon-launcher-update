@@ -1,0 +1,69 @@
+#app {
+  height: 100vh;
+  overflow: hidden;
+  text-align: center;
+  background-color: transparent;
+}
+
+.titlebar-status {
+  position: fixed;
+  top: 0;
+  right: 12px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 1001;
+}
+
+.app-layout {
+  display: flex;
+  height: 100%;
+}
+
+.app-content {
+  position: relative;
+  flex: 1;
+
+  padding: 10px;
+  overflow: auto;
+  background: radial-gradient(
+    ellipse at top,
+    #1b2938 0%,
+    #0c141a 60%,
+    #070a0f 100%
+  );
+}
+
+.app-content-inner {
+  position: relative;
+  height: calc(100% - 56px);
+  margin-top: 56px;
+}
+
+.app-content::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100px;
+  background: linear-gradient(to right, #16171b, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.app-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.app-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.app-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}

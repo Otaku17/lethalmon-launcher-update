@@ -1,0 +1,24 @@
+.hud-badges{ display:flex; flex-wrap:wrap; gap:10px; }
+
+.hud-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  padding: 6px 12px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+
+.hud-badge::before{
+  content:"";
+  width: 6px; height: 6px;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.hud-badge--ok{ color: var(--cyan); background: rgba(77,238,234,0.08); }
+.hud-badge--warn{ color: var(--amber); background: rgba(255,184,77,0.08); }
+.hud-badge--danger{ color: var(--magenta); background: rgba(255,61,129,0.08); }

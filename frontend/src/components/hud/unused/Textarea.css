@@ -1,0 +1,26 @@
+.hud-textarea{ width:100%; max-width:340px; display:flex; flex-direction:column; gap:6px; }
+
+.hud-textarea textarea{
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  background: rgba(77,238,234,0.04);
+  border: 2px solid var(--panel-border);
+  padding: 11px 14px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: .5px;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color .2s ease, filter .2s ease;
+}
+
+.hud-textarea textarea::placeholder{ color: var(--text-dim); }
+
+.hud-textarea textarea:focus{
+  border-color: var(--cyan);
+  filter: drop-shadow(0 0 8px rgba(77,238,234,0.4));
+}
+
+.hud-textarea__count{ align-self: flex-end; font-size: 10px; letter-spacing: 1px; color: var(--text-dim); }

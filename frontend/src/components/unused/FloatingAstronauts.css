@@ -1,0 +1,15 @@
+.floating-astronauts {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.floating-astronaut {
+  position: absolute;
+  top: 0;
+  left: 0;
+  image-rendering: pixelated;
+  opacity: 0.85;
+  will-change: transform;
+}

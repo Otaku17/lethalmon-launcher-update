@@ -1,0 +1,51 @@
+.hud-progress{ width:100%; max-width:340px; }
+
+.hud-progress__head{
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+}
+
+.hud-progress__value{ color: var(--cyan); font-family: var(--display); }
+
+.hud-progress__track{
+  position: relative;
+  height: 14px;
+  background: rgba(77,238,234,0.05);
+  border: 2px solid var(--panel-border);
+  overflow: hidden;
+}
+
+.hud-progress__fill{
+  position: relative;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(77,238,234,0.5), var(--cyan));
+  box-shadow: 0 0 10px rgba(77,238,234,0.5);
+  overflow: hidden;
+  transition: width .3s ease;
+}
+
+.hud-progress__fill::after{
+  content:"";
+  position: absolute;
+  inset: 0;
+  width: 200%;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255,255,255,0.18) 0 6px,
+    transparent 6px 12px
+  );
+  animation: progress-scan 1.4s linear infinite;
+}
+
+@keyframes progress-scan{
+  from{ transform: translateX(-24px); }
+  to{ transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .hud-progress__fill::after{ animation: none; }
+}

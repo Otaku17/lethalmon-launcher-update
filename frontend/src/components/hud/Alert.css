@@ -1,0 +1,34 @@
+.hud-alerts{ display:flex; flex-direction:column; gap:12px; width:100%; }
+
+.hud-alert{
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 13px 16px;
+  border: 2px solid var(--cyan-soft);
+  background: rgba(77,238,234,0.05);
+}
+
+.hud-alert svg{ width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; color: var(--cyan); }
+
+.hud-alert__body{ flex: 1; min-width: 0; text-align: left; }
+
+.hud-alert__action{ flex-shrink: 0; align-self: center; }
+
+.hud-alert__action .hud-btn{ padding: 9px; }
+
+.hud-alert__title{
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  color: #eaf6f8;
+  margin-bottom: 2px;
+}
+
+.hud-alert__text{ font-size: 12px; color: var(--text-dim); letter-spacing: .3px; line-height: 1.5; }
+
+.hud-alert--warn{ border-color: rgba(255,184,77,0.45); background: rgba(255,184,77,0.06); }
+.hud-alert--warn svg{ color: var(--amber); }
+
+.hud-alert--danger{ border-color: rgba(255,61,129,0.45); background: rgba(255,61,129,0.06); }
+.hud-alert--danger svg{ color: var(--magenta); }

@@ -1,0 +1,20 @@
+build/bin
+node_modules
+frontend/dist
+
+# Separate backend project (distribution server) — not part of the
+# launcher's own public source, kept out of this repo.
+lethalmon_api/
+
+# Internal dev docs, not part of the public repo (only README + LICENSE are).
+CHANGELOG.md
+RELEASING.md
+
+# stray binaries from `go build ./...` sanity checks at the module root
+# (wails build's real output goes to build/bin, not here)
+/*.exe
+
+# ed25519 private key used to sign launcher updates (see tools/updatesign) —
+# never commit this, only the public key belongs in app_launcher_update.go.
+launcher_update_private.key
+launcher_update_public.key

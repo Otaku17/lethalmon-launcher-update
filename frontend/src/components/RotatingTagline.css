@@ -1,0 +1,30 @@
+.rotating-tagline {
+  margin: -4px 0 0;
+  max-width: 620px;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.92);
+  animation: rotating-tagline-cycle 5s ease-in-out;
+}
+
+@keyframes rotating-tagline-cycle {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

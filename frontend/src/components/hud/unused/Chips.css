@@ -1,0 +1,52 @@
+.hud-chips{
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(77,238,234,0.03);
+  border: 2px solid var(--panel-border);
+  transition: border-color .2s ease;
+}
+
+.hud-chips:focus-within{ border-color: var(--cyan-soft); }
+
+.hud-chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 10px;
+  background: rgba(77,238,234,0.1);
+  border: 1px solid var(--cyan-soft);
+  font-size: 11px;
+  letter-spacing: .5px;
+  color: var(--text);
+}
+
+.hud-chip button{
+  background: none;
+  border: none;
+  color: var(--cyan);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+.hud-chip button svg{ width: 11px; height: 11px; }
+
+.hud-chips__input{
+  flex: 1;
+  min-width: 90px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .5px;
+}
+
+.hud-chips__input::placeholder{ color: var(--text-dim); }

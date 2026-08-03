@@ -1,0 +1,112 @@
+{
+  "teams": [
+    {
+      "id": "flo",
+      "name": "Flo",
+      "image": "flo.png",
+      "roles_id": ["creator_dev"],
+      "group": "team",
+      "socials": {
+        "x": "https://x.com/bFlo17"
+      }
+    },
+    {
+      "id": "ota",
+      "name": "Ota",
+      "image": "ota.png",
+      "roles_id": ["dev"],
+      "group": "team",
+      "socials": {
+        "github": "https://github.com/Otaku17"
+      }
+    },
+    {
+      "id": "selim",
+      "name": "Selim",
+      "image": "selim.webp",
+      "roles_id": ["main_contributor"],
+      "group": "team",
+      "socials": {}
+    },
+    {
+      "id": "lyse",
+      "name": "Lyse",
+      "image": "lyse.webp",
+      "roles_id": ["designer_illustrator"],
+      "group": "team",
+      "socials": {
+        "instagram": "https://www.instagram.com/lyse.design/",
+        "x": "https://x.com/Lyse_design",
+        "tiktok": "https://www.tiktok.com/@lyse_design"
+      }
+    },
+    {
+      "id": "enzo",
+      "name": "Enzo",
+      "image": "enzo.png",
+      "roles_id": ["team_builder"],
+      "group": "team",
+      "socials": {
+        "x": "https://x.com/Enzsus"
+      }
+    },
+    {
+      "id": "h3ylow",
+      "name": "H3ylow",
+      "image": "haylow.webp",
+      "roles_id": ["english_translator"],
+      "group": "team",
+      "socials": {
+        "x": "https://x.com/h3ylloo"
+      }
+    },
+    {
+      "id": "sirmalo",
+      "name": "SirMalo",
+      "image": "sirmalo.png",
+      "roles_id": ["pixel_artist"],
+      "group": "contributor",
+      "socials": {}
+    },
+    {
+      "id": "nastimz",
+      "name": "Nastimz",
+      "image": "nastimz.webp",
+      "roles_id": ["pixel_artist"],
+      "group": "contributor",
+      "socials": {
+        "x": "https://x.com/Nastimz"
+      }
+    },
+    {
+      "id": "the_blind_archer",
+      "name": "The Blind Archer",
+      "image": "theblindarcher.png",
+      "roles_id": ["pixel_artist"],
+      "group": "contributor",
+      "socials": {
+        "website": "https://theblindarcher.carrd.co/"
+      }
+    },
+    {
+      "id": "dracoyan",
+      "name": "Dracoyan",
+      "image": "dracoyan.webp",
+      "roles_id": ["pixel_artist"],
+      "group": "contributor",
+      "socials": {
+        "x": "https://x.com/dracoyan2"
+      }
+    },
+    {
+      "id": "zozo",
+      "name": "Zozo",
+      "image": "zozo.png",
+      "roles_id": ["dev"],
+      "group": "contributor",
+      "socials": {
+        "github": "https://github.com/Zodiarche"
+      }
+    }
+  ]
+}

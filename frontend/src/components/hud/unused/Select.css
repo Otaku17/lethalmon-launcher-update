@@ -1,0 +1,44 @@
+.hud-select{
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  background: rgba(77,238,234,0.04);
+  border: 2px solid var(--panel-border);
+  transition: border-color .2s ease, filter .2s ease;
+}
+
+.hud-select:focus-within{
+  border-color: var(--cyan);
+  filter: drop-shadow(0 0 8px rgba(77,238,234,0.4));
+}
+
+.hud-select select{
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 1px;
+  padding: 11px 34px 11px 15px;
+  cursor: pointer;
+}
+
+.hud-select select option{
+  background: var(--panel);
+  color: var(--text);
+}
+
+.hud-select svg{
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  width: 14px; height: 14px;
+  color: var(--cyan);
+  pointer-events: none;
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "Lethalmon Launcher",
+  "outputfilename": "Lethal Launcher",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Ota",
+    "email": ""
+  },
+  "info": {
+    "companyName": "Lethalmon Team",
+    "productName": "Lethalmon Launcher",
+    "productVersion": "1.0.3",
+    "copyright": "Copyright © 2026 Lethalmon Team",
+    "comments": "Launcher for the Lethalmon fangame"
+  }
+}

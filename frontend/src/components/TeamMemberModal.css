@@ -1,0 +1,59 @@
+.team-member-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.team-member-modal__identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.team-member-modal__avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--panel-border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.team-member-modal__avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+}
+
+.team-member-modal__roles {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.team-member-modal__socials {
+  display: flex;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.team-member-modal__social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: rgba(77, 238, 234, 0.06);
+  border: 1px solid var(--panel-border);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.team-member-modal__social:hover {
+  color: var(--cyan);
+  border-color: var(--cyan-soft);
+  background: rgba(77, 238, 234, 0.14);
+}

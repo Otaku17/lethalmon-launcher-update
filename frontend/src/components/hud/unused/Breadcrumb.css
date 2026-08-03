@@ -1,0 +1,20 @@
+.hud-breadcrumb{
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.hud-breadcrumb a{
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color .2s ease;
+}
+
+.hud-breadcrumb a:hover{ color: var(--cyan); }
+
+.hud-breadcrumb .is-current{ color: var(--cyan); font-family: var(--display); font-size: 11px; letter-spacing: 1.5px; }
+
+.hud-breadcrumb__sep{ color: var(--panel-border); }

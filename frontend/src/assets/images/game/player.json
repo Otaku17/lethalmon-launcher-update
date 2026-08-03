@@ -1,0 +1,57 @@
+{
+  "no_walk": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 44,
+      "height": 47
+    }
+  ],
+  "run": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 44,
+      "height": 47
+    },
+    {
+      "x": 49,
+      "y": 0,
+      "width": 44,
+      "height": 47
+    }
+  ],
+  "duck": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 59,
+      "height": 30
+    },
+    {
+      "x": 64,
+      "y": 0,
+      "width": 59,
+      "height": 30
+    }
+  ],
+  "dead": [
+    {
+      "loop": false,
+      "pos": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 44,
+          "height": 47
+        },
+        {
+          "x": 49,
+          "y": 0,
+          "width": 44,
+          "height": 47
+        }
+      ]
+    }
+  ]
+}

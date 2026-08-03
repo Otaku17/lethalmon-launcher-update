@@ -1,0 +1,46 @@
+.particle-background-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.particle-background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  /* La grille/les nœuds s'additionnent au fond sombre du thème au lieu de
+     simplement se superposer -> plus cohérent avec les lueurs cyan/magenta
+     des autres composants. */
+  mix-blend-mode: screen;
+}
+
+/* Lignes de balayage discrètes, cohérentes avec le reste des composants HUD. */
+.particle-background-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.12) 0px,
+    rgba(0, 0, 0, 0.12) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+}
+
+/* Léger vignettage pour assombrir les bords, comme un cadre HUD. */
+.particle-background-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    rgba(36, 24, 28, 0.55) 100%
+  );
+}

@@ -1,0 +1,36 @@
+.hud-input{
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(77,238,234,0.04);
+  border: 2px solid var(--panel-border);
+  padding: 11px 15px;
+  transition: border-color .2s ease, filter .2s ease;
+}
+
+.hud-input:focus-within{
+  border-color: var(--cyan);
+  filter: drop-shadow(0 0 8px rgba(77,238,234,0.4));
+}
+
+.hud-input__prefix{
+  color: var(--cyan);
+  font-size: 14px;
+}
+
+.hud-input input{
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.hud-input input::placeholder{
+  color: var(--text-dim);
+}

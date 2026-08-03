@@ -1,0 +1,100 @@
+.hud-tooltip{ position: relative; display: inline-flex; }
+
+.hud-tooltip__bubble{
+  position: absolute;
+  background: #0a1119;
+  border: 1px solid var(--cyan-soft);
+  padding: 8px 12px;
+  font-size: 11px;
+  letter-spacing: .5px;
+  color: var(--text);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease, transform .15s ease;
+  z-index: 5;
+}
+
+.hud-tooltip__bubble::after{
+  content:"";
+  position: absolute;
+  border: 6px solid transparent;
+}
+
+/* ---------- Top (par défaut) ---------- */
+.hud-tooltip__bubble--top{
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+}
+
+.hud-tooltip__bubble--top::after{
+  top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border-top-color: var(--cyan-soft);
+}
+
+.hud-tooltip:hover .hud-tooltip__bubble--top,
+.hud-tooltip:focus-within .hud-tooltip__bubble--top{
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ---------- Bottom ---------- */
+.hud-tooltip__bubble--bottom{
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.hud-tooltip__bubble--bottom::after{
+  bottom: 100%; left: 50%;
+  transform: translateX(-50%);
+  border-bottom-color: var(--cyan-soft);
+}
+
+.hud-tooltip:hover .hud-tooltip__bubble--bottom,
+.hud-tooltip:focus-within .hud-tooltip__bubble--bottom{
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ---------- Left ---------- */
+.hud-tooltip__bubble--left{
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(4px);
+}
+
+.hud-tooltip__bubble--left::after{
+  left: 100%; top: 50%;
+  transform: translateY(-50%);
+  border-left-color: var(--cyan-soft);
+}
+
+.hud-tooltip:hover .hud-tooltip__bubble--left,
+.hud-tooltip:focus-within .hud-tooltip__bubble--left{
+  transform: translateY(-50%) translateX(0);
+}
+
+/* ---------- Right ---------- */
+.hud-tooltip__bubble--right{
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+}
+
+.hud-tooltip__bubble--right::after{
+  right: 100%; top: 50%;
+  transform: translateY(-50%);
+  border-right-color: var(--cyan-soft);
+}
+
+.hud-tooltip:hover .hud-tooltip__bubble--right,
+.hud-tooltip:focus-within .hud-tooltip__bubble--right{
+  transform: translateY(-50%) translateX(0);
+}
+
+/* ---------- Common visible state ---------- */
+.hud-tooltip:hover .hud-tooltip__bubble,
+.hud-tooltip:focus-within .hud-tooltip__bubble{
+  opacity: 1;
+}

@@ -1,0 +1,44 @@
+.hud-stepper{
+  display: inline-flex;
+  align-items: stretch;
+  height: 46px;
+  background: rgba(77,238,234,0.04);
+  border: 2px solid var(--cyan-soft);
+  overflow: hidden;
+}
+
+.hud-stepper__btn{
+  width: 38px;
+  background: rgba(77,238,234,0.05);
+  border: none;
+  color: var(--cyan);
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease;
+}
+
+.hud-stepper__btn:hover{ background: rgba(77,238,234,0.16); color: #eaf6f8; }
+.hud-stepper__btn:active{ background: rgba(77,238,234,0.24); }
+
+.hud-stepper__btn:focus-visible{
+  outline: 2px solid var(--cyan);
+  outline-offset: -2px;
+}
+
+.hud-stepper__value{
+  min-width: 70px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #eaf6f8;
+  border-left: 1px solid var(--panel-border);
+  border-right: 1px solid var(--panel-border);
+  padding: 0 8px;
+}
+
+.hud-stepper__unit{ font-size: 10px; color: var(--text-dim); margin-left: 4px; font-family: var(--mono); }
