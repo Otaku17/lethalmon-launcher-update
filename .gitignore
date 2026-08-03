@@ -10,6 +10,9 @@ lethalmon_api/
 CHANGELOG.md
 RELEASING.md
 
+# Local Claude Code tool config, not project source.
+.claude/
+
 # stray binaries from `go build ./...` sanity checks at the module root
 # (wails build's real output goes to build/bin, not here)
 /*.exe
