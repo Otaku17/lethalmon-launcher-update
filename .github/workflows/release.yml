@@ -78,12 +78,13 @@ jobs:
       - name: Build
         run: wails build
 
-      # Releases are published as "lethalmon-launcher-<version>.exe", while
+      # Releases are published as "lethalmon-launcher.exe" (no version in the
+      # name, so the download URL never changes between releases), while
       # wails.json builds "Lethal Launcher.exe".
       - name: Name the artifact after the release
         id: artifact
         run: |
-          $artifact = "build/bin/lethalmon-launcher-${{ steps.version.outputs.version }}.exe"
+          $artifact = "build/bin/lethalmon-launcher.exe"
           Move-Item -LiteralPath "build/bin/Lethal Launcher.exe" -Destination $artifact -Force
           "path=$artifact" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
