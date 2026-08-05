@@ -10,37 +10,16 @@ import (
 	"strings"
 	"time"
 
+	"LethalmonLauncher/internal/updatekey"
+
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// launcherUpdatePublicKeyB64 is the public half of the ed25519 keypair used
-// to sign launcher update artifacts (see tools/updatesign). It only lets
-// this binary VERIFY that a downloaded update was signed by whoever holds
-// the matching private key — it can't be used to sign anything, so
-// embedding it here is safe. This protects against a compromised GitHub
-// account or a tampered release asset serving a modified executable; it's
-// independent of (and doesn't replace) Authenticode code signing, which is
-// about OS-level trust (SmartScreen/Defender), not update integrity.
-const launcherUpdatePublicKeyB64 = "E1rqwTfPYmMI0R0bMMR3NuMegdfDkUpoWxO6xZsMSS0="
-
-// launcherUpdatePublicKey decodes launcherUpdatePublicKeyB64 into a usable
-// ed25519 key, validating its length.
-func launcherUpdatePublicKey() (ed25519.PublicKey, error) {
-	key, err := base64.StdEncoding.DecodeString(launcherUpdatePublicKeyB64)
-	if err != nil {
-		return nil, fmt.Errorf("invalid embedded public key: %w", err)
-	}
-	if len(key) != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("invalid embedded public key size: %d", len(key))
-	}
-	return ed25519.PublicKey(key), nil
-}
-
 // verifyLauncherUpdateSignature downloads the signature file at
 // signatureURL (see tools/updatesign) and checks it against data using the
-// embedded public key.
+// public key shared with the signing tool (see internal/updatekey).
 func verifyLauncherUpdateSignature(signatureURL string, data []byte) error {
-	pubKey, err := launcherUpdatePublicKey()
+	pubKey, err := updatekey.Public()
 	if err != nil {
 		return err
 	}
@@ -81,8 +60,8 @@ type LauncherVersionCheck struct {
 	UpdateAvailable bool   `json:"updateAvailable"`
 	DownloadURL     string `json:"downloadUrl,omitempty"`
 	// SignatureURL is empty when the latest GitHub release has no ".sig"
-	// companion asset (see tools/updatesign) — signature verification is
-	// then simply skipped, not treated as an error.
+	// companion asset (see tools/updatesign). Such a release cannot be
+	// installed: UpdateLauncher refuses to run an update it can't verify.
 	SignatureURL string `json:"signatureUrl,omitempty"`
 }
 
@@ -154,6 +133,18 @@ func (a *App) UpdateLauncher() error {
 		return fmt.Errorf("no downloadable launcher update found")
 	}
 
+	// Signature verification is mandatory, and checked before spending a
+	// download on an artifact that would be rejected anyway. Treating a
+	// missing ".sig" as "nothing to verify" would have made the whole
+	// scheme optional in practice: anyone able to serve a modified release
+	// asset could simply omit the signature to skip the check. The release
+	// workflow always publishes a signature alongside the exe (see
+	// .github/workflows/release.yml), so a release without one is a broken
+	// release, not a normal case.
+	if check.SignatureURL == "" {
+		return fmt.Errorf("launcher update is not signed — refusing to install")
+	}
+
 	tmpFile, err := os.CreateTemp("", "lethalmon-launcher-update-*.exe")
 	if err != nil {
 		return err
@@ -167,22 +158,15 @@ func (a *App) UpdateLauncher() error {
 	}
 	tmpFile.Close()
 
-	// Signature verification is opportunistic: the release only has a
-	// ".sig" asset when one was uploaded alongside the exe (see
-	// tools/updatesign). If present, a bad signature aborts the update; if
-	// absent, we simply skip the check rather than blocking installs on
-	// optional metadata.
-	if check.SignatureURL != "" {
-		tmpData, err := os.ReadFile(tmpPath)
-		if err != nil {
-			os.Remove(tmpPath)
-			return err
-		}
+	tmpData, err := os.ReadFile(tmpPath)
+	if err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
 
-		if err := verifyLauncherUpdateSignature(check.SignatureURL, tmpData); err != nil {
-			os.Remove(tmpPath)
-			return err
-		}
+	if err := verifyLauncherUpdateSignature(check.SignatureURL, tmpData); err != nil {
+		os.Remove(tmpPath)
+		return err
 	}
 
 	wailsruntime.EventsEmit(a.ctx, launcherUpdateProgressEvent, launcherUpdateProgress{
