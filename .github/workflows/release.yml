@@ -1,0 +1,134 @@
+name: Release
+
+# Builds the launcher from a tag, signs it with the ed25519 update key, and
+# attaches both the exe and its signature to the GitHub release.
+#
+# Signing used to be a manual step run from a developer's machine, which
+# made it possible to forget. It can't be forgotten any more: installed
+# launchers refuse to apply an update that has no valid ".sig" companion
+# (see app_launcher_update.go), so producing the signature has to be part
+# of the same automation that publishes the exe.
+#
+# Required repository secret:
+#   LAUNCHER_UPDATE_PRIVATE_KEY — contents of launcher_update_private.key
+#     (the base64 line produced by `go run ./tools/updatesign -gen`).
+#     It must be the private half of PublicKeyB64 in
+#     internal/updatekey/updatekey.go; updatesign refuses to sign otherwise.
+
+on:
+  push:
+    tags:
+      # Both tag styles the repo has used so far ("v1.0.4" and "1.0.3").
+      - "v*"
+      - "[0-9]*"
+
+# Needed to attach the built artifacts to the release.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # The launcher reads its own version from frontend/package.json (see
+      # version.go), while the update check compares it against the latest
+      # release tag. If the two disagree, an updated launcher still reports
+      # the old version and keeps offering the very update it just
+      # installed — an update loop players can't get out of. Cheaper to
+      # fail the release here.
+      - name: Check the tag matches frontend/package.json
+        id: version
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          $pkgVersion = (Get-Content frontend/package.json -Raw | ConvertFrom-Json).version
+          if ($pkgVersion -ne $version) {
+            throw "Tag '${{ github.ref_name }}' is version '$version' but frontend/package.json says '$pkgVersion'. Bump package.json to match the tag before releasing."
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Releasing version $version"
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Vet Go sources
+        run: go vet ./...
+
+      - name: Build
+        run: wails build
+
+      # Releases are published as "lethalmon-launcher-<version>.exe", while
+      # wails.json builds "Lethal Launcher.exe".
+      - name: Name the artifact after the release
+        id: artifact
+        run: |
+          $artifact = "build/bin/lethalmon-launcher-${{ steps.version.outputs.version }}.exe"
+          Move-Item -LiteralPath "build/bin/Lethal Launcher.exe" -Destination $artifact -Force
+          "path=$artifact" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      # Any step that rewrites the exe (Authenticode signing, in
+      # particular) must run BEFORE this one — signing the file afterwards
+      # would invalidate the signature produced here. The verify step below
+      # is what catches that mistake.
+      - name: Sign the launcher
+        env:
+          LAUNCHER_UPDATE_PRIVATE_KEY: ${{ secrets.LAUNCHER_UPDATE_PRIVATE_KEY }}
+        run: |
+          if (-not $env:LAUNCHER_UPDATE_PRIVATE_KEY) {
+            throw "The LAUNCHER_UPDATE_PRIVATE_KEY secret is not set. Without it the release would ship an unsigned exe that no installed launcher accepts as an update."
+          }
+          # Written outside the workspace so no later step can pick it up
+          # as a build artifact, and removed as soon as signing is done.
+          $keyPath = Join-Path $env:RUNNER_TEMP "launcher_update_private.key"
+          try {
+            Set-Content -LiteralPath $keyPath -Value $env:LAUNCHER_UPDATE_PRIVATE_KEY -NoNewline -Encoding ascii
+            go run ./tools/updatesign -sign "${{ steps.artifact.outputs.path }}" -key $keyPath
+            if ($LASTEXITCODE -ne 0) { throw "updatesign failed with exit code $LASTEXITCODE" }
+          } finally {
+            Remove-Item -LiteralPath $keyPath -Force -ErrorAction SilentlyContinue
+          }
+
+      # Runs the same check an installed launcher runs before applying an
+      # update, against the exact files about to be uploaded.
+      - name: Verify the signature
+        run: |
+          go run ./tools/updatesign -verify "${{ steps.artifact.outputs.path }}"
+          if ($LASTEXITCODE -ne 0) { throw "signature verification failed with exit code $LASTEXITCODE" }
+
+      - name: Publish to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $artifact = "${{ steps.artifact.outputs.path }}"
+          # Pushing a bare tag doesn't create a release; publishing one from
+          # the GitHub UI does. Handle both so the artifacts land either way.
+          gh release view $tag --json tagName | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "No release exists for $tag yet — creating one."
+            gh release create $tag --title $tag --generate-notes
+            if ($LASTEXITCODE -ne 0) { throw "gh release create failed with exit code $LASTEXITCODE" }
+          }
+          gh release upload $tag $artifact "$artifact.sig" --clobber
+          if ($LASTEXITCODE -ne 0) { throw "gh release upload failed with exit code $LASTEXITCODE" }
