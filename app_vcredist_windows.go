@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -72,6 +73,16 @@ func (a *App) ensureVCRedist() error {
 	}
 	tmpFile.Close()
 
+	// The redirect target is Microsoft's own CDN over HTTPS, but TLS only
+	// proves the connection wasn't tampered with in transit — it says
+	// nothing about the file itself if that CDN or aka.ms redirect were
+	// ever compromised. Checking the Authenticode signature confirms
+	// what's about to run silently as an installer is genuinely
+	// Microsoft's, not just "downloaded over a secure connection".
+	if err := verifyMicrosoftSignature(tmpPath); err != nil {
+		return err
+	}
+
 	wailsruntime.EventsEmit(a.ctx, vcRedistProgressEvent, vcRedistProgress{Stage: "installing"})
 
 	cmd := exec.Command(tmpPath, "/install", "/quiet", "/norestart")
@@ -82,6 +93,28 @@ func (a *App) ensureVCRedist() error {
 
 	wailsruntime.EventsEmit(a.ctx, vcRedistProgressEvent, vcRedistProgress{Stage: "done", Percent: 100})
 
+	return nil
+}
+
+// verifyMicrosoftSignature checks that path carries a valid Authenticode
+// signature issued to Microsoft Corporation, via PowerShell's
+// Get-AuthenticodeSignature (there's no cgo-free way to call WinVerifyTrust
+// directly from Go). Guards against running a tampered or substituted
+// installer if aka.ms's redirect target or Microsoft's CDN were ever
+// compromised — HTTPS alone only proves the download wasn't altered
+// in transit, not that it's genuinely Microsoft's file.
+func verifyMicrosoftSignature(path string) error {
+	quotedPath := "'" + strings.ReplaceAll(path, "'", "''") + "'"
+	script := "$sig = Get-AuthenticodeSignature -LiteralPath " + quotedPath + "; " +
+		"if ($sig.Status -ne 'Valid') { exit 1 }; " +
+		"if ($sig.SignerCertificate.Subject -notlike '*O=Microsoft Corporation*') { exit 1 }; " +
+		"exit 0"
+
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", script)
+	hideWindow(cmd)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("vc_redist installer failed Microsoft signature verification: %w", err)
+	}
 	return nil
 }
 

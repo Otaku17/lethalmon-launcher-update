@@ -186,3 +186,32 @@ func (a *App) SelectInstallFolder() (string, error) {
 
 	return selected, nil
 }
+
+// launcherEditionGameOptKey is the .gameopts key stamped on every launch to
+// mark the install as started by this (Wails-based) launcher. The previous
+// Electron-based launcher never wrote this key, so the game can read its
+// presence (via PARGV.game_opt in Ruby, which re-reads .gameopts from disk
+// on every call) to distinguish "launched by the new launcher" from a
+// legacy-launcher or manual launch — e.g. to gate a launcher-exclusive
+// Mystery Gift.
+const launcherEditionGameOptKey = "launcher_edition"
+
+// stampLauncherEdition writes the launcher's own version into .gameopts
+// under launcherEditionGameOptKey, unconditionally overwriting any previous
+// value. Unlike ensureGameOptsDefaults, this isn't a user preference to
+// preserve — it must always reflect which launcher actually started the game
+// this time.
+func stampLauncherEdition(installDir string) error {
+	opts, err := readGameOpts(installDir)
+	if err != nil {
+		return err
+	}
+
+	value := launcherVersion
+	if value == "" {
+		value = "unknown"
+	}
+	opts[launcherEditionGameOptKey] = value
+
+	return writeGameOpts(installDir, opts)
+}
