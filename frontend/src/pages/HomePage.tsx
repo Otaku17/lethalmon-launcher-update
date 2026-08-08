@@ -35,6 +35,11 @@ interface DownloadProgress {
   percent: number;
 }
 
+interface VCRedistProgress {
+  stage: 'downloading' | 'installing' | 'done';
+  percent: number;
+}
+
 function HomePage() {
   const { t } = useTranslation();
   const { installed, online, updateAvailable, running, setRunning, refresh } = useAppStatus();
@@ -44,6 +49,7 @@ function HomePage() {
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [showKillConfirm, setShowKillConfirm] = useState(false);
+  const [vcRedistProgress, setVcRedistProgress] = useState<VCRedistProgress | null>(null);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const logoClicks = useRef(0);
   const lastLogoClickAt = useRef(0);
@@ -61,8 +67,16 @@ function HomePage() {
     });
   }, []);
 
+  useEffect(() => {
+    return EventsOn('game:vcredist-progress', (data: VCRedistProgress) => {
+      setVcRedistProgress(data);
+    });
+  }, []);
+
   async function handleLaunch() {
+    setVcRedistProgress(null);
     await LaunchGame().catch(() => {});
+    setVcRedistProgress(null);
     if (!multiInstance) setRunning(true);
   }
 
@@ -242,6 +256,20 @@ function HomePage() {
               <Progress
                 label={t(`install.${downloadProgress?.stage ?? 'downloading'}`)}
                 value={downloadProgress?.percent ?? 0}
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {vcRedistProgress &&
+        vcRedistProgress.stage !== 'done' &&
+        createPortal(
+          <div className="home-download-overlay">
+            <div className="home-download-box">
+              <Progress
+                label={t(`home.vcRedist.${vcRedistProgress.stage}`)}
+                value={vcRedistProgress.percent}
               />
             </div>
           </div>,

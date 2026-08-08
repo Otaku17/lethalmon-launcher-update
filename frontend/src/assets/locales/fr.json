@@ -52,6 +52,10 @@
       "available": "Une nouvelle version du launcher ({{version}}) est disponible.",
       "downloading": "TÉLÉCHARGEMENT",
       "installing": "INSTALLATION"
+    },
+    "vcRedist": {
+      "downloading": "TÉLÉCHARGEMENT DES COMPOSANTS REQUIS",
+      "installing": "INSTALLATION DES COMPOSANTS REQUIS"
     }
   },
   "changelog": {

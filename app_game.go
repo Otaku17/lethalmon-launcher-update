@@ -95,6 +95,13 @@ func (a *App) LaunchGame() error {
 		return err
 	}
 
+	// Best-effort: a failed check/install (offline, blocked download) isn't
+	// fatal here — it just means the launch attempt below may fail exactly
+	// as it would have without this call. Whereas skipping it entirely
+	// left every player missing the runtime stuck on a cryptic
+	// "VCRUNTIME140.dll is missing" system dialog with no fix in sight.
+	_ = a.ensureVCRedist()
+
 	cmd := exec.Command(exePath)
 	cmd.Dir = installDir
 	if err := cmd.Start(); err != nil {
