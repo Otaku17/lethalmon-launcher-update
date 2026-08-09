@@ -102,6 +102,10 @@ func (a *App) LaunchGame() error {
 	// "VCRUNTIME140.dll is missing" system dialog with no fix in sight.
 	_ = a.ensureVCRedist()
 
+	if err := stampLauncherEdition(installDir); err != nil {
+		return err
+	}
+
 	cmd := exec.Command(exePath)
 	cmd.Dir = installDir
 	if err := cmd.Start(); err != nil {
@@ -196,22 +200,17 @@ func (a *App) SelectInstallFolder() (string, error) {
 // Mystery Gift.
 const launcherEditionGameOptKey = "launcher_edition"
 
-// stampLauncherEdition writes the launcher's own version into .gameopts
-// under launcherEditionGameOptKey, unconditionally overwriting any previous
-// value. Unlike ensureGameOptsDefaults, this isn't a user preference to
-// preserve — it must always reflect which launcher actually started the game
-// this time.
+// stampLauncherEdition writes "true" into .gameopts under
+// launcherEditionGameOptKey, unconditionally overwriting any previous value.
+// Unlike ensureGameOptsDefaults, this isn't a user preference to preserve —
+// it must always reflect which launcher actually started the game this time.
 func stampLauncherEdition(installDir string) error {
 	opts, err := readGameOpts(installDir)
 	if err != nil {
 		return err
 	}
 
-	value := launcherVersion
-	if value == "" {
-		value = "unknown"
-	}
-	opts[launcherEditionGameOptKey] = value
+	opts[launcherEditionGameOptKey] = "true"
 
 	return writeGameOpts(installDir, opts)
 }
