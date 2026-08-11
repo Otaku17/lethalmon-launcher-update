@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -40,12 +41,23 @@ func legacyInstallDir() (string, error) {
 // creating it if it doesn't exist yet. Honors a custom location persisted
 // via MoveInstallDir; otherwise falls back to an existing install from the
 // previous launcher if found, then to the default location.
+//
+// A persisted custom location that's no longer usable (e.g. it now points
+// at a file instead of a folder, or its parent is no longer accessible —
+// this has happened with a stray "D:\Config.Msi" value) is self-healed by
+// clearing it from the config, rather than leaving the launcher permanently
+// broken until someone manually edits/deletes config.json.
 func (a *App) GetInstallDir() (string, error) {
 	if cfg := loadConfig(); cfg.InstallDir != "" {
-		if err := os.MkdirAll(cfg.InstallDir, 0o755); err != nil {
-			return "", err
+		if info, statErr := os.Stat(cfg.InstallDir); statErr == nil && !info.IsDir() {
+			cfg.InstallDir = ""
+			saveConfig(cfg)
+		} else if err := os.MkdirAll(cfg.InstallDir, 0o755); err == nil {
+			return cfg.InstallDir, nil
+		} else {
+			cfg.InstallDir = ""
+			saveConfig(cfg)
 		}
-		return cfg.InstallDir, nil
 	}
 
 	if legacyDir, err := legacyInstallDir(); err == nil {
@@ -65,6 +77,20 @@ func (a *App) GetInstallDir() (string, error) {
 	}
 
 	return installDir, nil
+}
+
+// ResetInstallPath clears any custom install location persisted via
+// MoveInstallDir, so GetInstallDir falls back to the legacy or default
+// location. Exposed as a manual escape hatch for a corrupted/inaccessible
+// custom path, so recovering no longer requires editing or deleting
+// config.json by hand.
+func (a *App) ResetInstallPath() (string, error) {
+	cfg := loadConfig()
+	cfg.InstallDir = ""
+	if err := saveConfig(cfg); err != nil {
+		return "", err
+	}
+	return a.GetInstallDir()
 }
 
 // GetGameVersion reads the installed game's version from its version.txt
@@ -95,12 +121,16 @@ func (a *App) LaunchGame() error {
 		return err
 	}
 
-	// Best-effort: a failed check/install (offline, blocked download) isn't
-	// fatal here — it just means the launch attempt below may fail exactly
-	// as it would have without this call. Whereas skipping it entirely
-	// left every player missing the runtime stuck on a cryptic
-	// "VCRUNTIME140.dll is missing" system dialog with no fix in sight.
-	_ = a.ensureVCRedist()
+	// Best-effort: a failed check/install (offline, blocked download, UAC
+	// prompt declined) isn't fatal here — it just means the launch attempt
+	// below may fail exactly as it would have without this call. But it's
+	// reported via vcRedistProgressEvent (stage "failed") so the frontend
+	// can at least tell the player why, instead of leaving them to guess
+	// after the game crashes with a bare "VCRUNTIME140.dll is missing"
+	// system dialog.
+	if err := a.ensureVCRedist(); err != nil {
+		wailsruntime.EventsEmit(a.ctx, vcRedistProgressEvent, vcRedistProgress{Stage: "failed", Error: err.Error()})
+	}
 
 	if err := stampLauncherEdition(installDir); err != nil {
 		return err
@@ -172,6 +202,49 @@ func (a *App) OpenInstallFolder() error {
 	return cmd.Start()
 }
 
+// errOneDrivePath is returned by SelectInstallFolder when the user picks a
+// folder synced by OneDrive. The frontend matches on this exact message to
+// show a translated, user-friendly explanation instead of a raw Go error.
+var errOneDrivePath = errors.New("onedrive_path_not_allowed")
+
+// isOneDrivePath reports whether path lives inside a OneDrive-synced folder.
+// OneDrive locks/renames files mid-sync and can silently break the game's
+// save files and updater, so installing there is not supported.
+func isOneDrivePath(path string) bool {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		abs = path
+	}
+	abs = strings.ToLower(abs)
+
+	// Primary check: compare against the OneDrive sync-root env vars Windows
+	// sets for personal and work/school accounts.
+	for _, envVar := range []string{"OneDrive", "OneDriveConsumer", "OneDriveCommercial"} {
+		root := os.Getenv(envVar)
+		if root == "" {
+			continue
+		}
+		rootAbs, err := filepath.Abs(root)
+		if err != nil {
+			rootAbs = root
+		}
+		rootAbs = strings.ToLower(rootAbs)
+		if abs == rootAbs || strings.HasPrefix(abs, rootAbs+string(filepath.Separator)) {
+			return true
+		}
+	}
+
+	// Fallback: catch OneDrive folders on other drives/accounts (e.g.
+	// "D:\OneDrive - CompanyName") that the env vars above don't cover.
+	for _, part := range strings.Split(abs, string(filepath.Separator)) {
+		if strings.HasPrefix(part, "onedrive") {
+			return true
+		}
+	}
+
+	return false
+}
+
 // SelectInstallFolder opens a native folder picker so the user can choose
 // where to install the game, defaulting to the current install directory.
 func (a *App) SelectInstallFolder() (string, error) {
@@ -186,6 +259,13 @@ func (a *App) SelectInstallFolder() (string, error) {
 	})
 	if err != nil {
 		return "", err
+	}
+	if selected == "" {
+		return "", nil
+	}
+
+	if isOneDrivePath(selected) {
+		return "", errOneDrivePath
 	}
 
 	return selected, nil

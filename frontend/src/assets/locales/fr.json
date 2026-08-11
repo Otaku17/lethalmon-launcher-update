@@ -22,7 +22,9 @@
     "confirm": "Confirmer",
     "downloading": "TÉLÉCHARGEMENT",
     "extracting": "EXTRACTION",
-    "done": "TERMINÉ"
+    "repairing": "VÉRIFICATION DES FICHIERS",
+    "done": "TERMINÉ",
+    "oneDriveError": "Ce dossier est synchronisé par OneDrive et ne peut pas être utilisé pour l'installation. OneDrive peut verrouiller ou déplacer les fichiers du jeu pendant la synchronisation, ce qui risque de corrompre vos sauvegardes et les mises à jour. Choisissez un dossier en dehors de OneDrive (par exemple directement sur C:\\)."
   },
   "sidebar": {
     "home": "Home",
@@ -55,7 +57,8 @@
     },
     "vcRedist": {
       "downloading": "TÉLÉCHARGEMENT DES COMPOSANTS REQUIS",
-      "installing": "INSTALLATION DES COMPOSANTS REQUIS"
+      "installing": "INSTALLATION DES COMPOSANTS REQUIS",
+      "failed": "Installation des composants requis (Visual C++) échouée : {{error}}. Si une fenêtre de confirmation Windows est apparue, acceptez-la pour permettre l'installation, puis relancez le jeu. Vous pouvez aussi l'installer manuellement depuis https://aka.ms/vs/17/release/vc_redist.x64.exe."
     }
   },
   "changelog": {
@@ -110,11 +113,20 @@
       "restartRequiredNotice": "Le jeu est actuellement lancé : les changements ci-dessous ne prendront effet qu'au prochain redémarrage du jeu.",
       "installPath": "Dossier d'installation",
       "installPathDescription": "Choisissez où le jeu est installé. Si une installation existe déjà, elle sera déplacée vers le nouveau dossier.",
+      "resetInstallPath": "Réinitialiser le chemin",
       "installPathPendingMove": "Déplacer l'installation vers : {{path}} ?",
       "movePathConfirm": "Déplacer",
       "openFolderAction": "Ouvrir le dossier du jeu",
       "installPathMoveError": "Échec du déplacement : {{error}}",
       "migrationProgressLabel": "DÉPLACEMENT EN COURS",
+      "repair": "Réparer le jeu",
+      "repairAction": "Réparer",
+      "repairDescription": "Retélécharge la dernière version du jeu et ne remplace que les fichiers manquants ou corrompus, sans toucher à vos sauvegardes.",
+      "repairError": "Échec de la réparation : {{error}}",
+      "repairConfirmTitle": "Réparer le jeu ?",
+      "repairConfirmDescription": "Le launcher va vérifier tous les fichiers du jeu et retélécharger uniquement ceux qui sont manquants ou corrompus. Vos sauvegardes ne sont pas affectées.",
+      "repairKillConfirmTitle": "Fermer le jeu pour le réparer ?",
+      "repairKillConfirmDescription": "Une ou plusieurs instances du jeu sont actuellement en cours d'exécution. Continuer va les fermer immédiatement (progression non sauvegardée perdue) avant de procéder à la réparation.",
       "uninstall": "Désinstaller le jeu",
       "uninstallAction": "Désinstaller",
       "uninstallDescription": "Supprime tous les fichiers du jeu installés sur cet ordinateur.",

@@ -32,7 +32,11 @@ export function MoveInstallDir(arg1:string):Promise<void>;
 
 export function OpenInstallFolder():Promise<void>;
 
+export function RepairGame():Promise<void>;
+
 export function ResetGameOptsDefaults():Promise<Record<string, string>>;
+
+export function ResetInstallPath():Promise<string>;
 
 export function SelectInstallFolder():Promise<string>;
 

@@ -62,8 +62,16 @@ export function OpenInstallFolder() {
   return window['go']['main']['App']['OpenInstallFolder']();
 }
 
+export function RepairGame() {
+  return window['go']['main']['App']['RepairGame']();
+}
+
 export function ResetGameOptsDefaults() {
   return window['go']['main']['App']['ResetGameOptsDefaults']();
+}
+
+export function ResetInstallPath() {
+  return window['go']['main']['App']['ResetInstallPath']();
 }
 
 export function SelectInstallFolder() {

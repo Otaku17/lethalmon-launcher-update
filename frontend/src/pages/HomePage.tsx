@@ -36,8 +36,9 @@ interface DownloadProgress {
 }
 
 interface VCRedistProgress {
-  stage: 'downloading' | 'installing' | 'done';
+  stage: 'downloading' | 'installing' | 'done' | 'failed';
   percent: number;
+  error?: string;
 }
 
 function HomePage() {
@@ -48,6 +49,7 @@ function HomePage() {
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [installPathError, setInstallPathError] = useState<string | null>(null);
   const [showKillConfirm, setShowKillConfirm] = useState(false);
   const [vcRedistProgress, setVcRedistProgress] = useState<VCRedistProgress | null>(null);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
@@ -76,7 +78,6 @@ function HomePage() {
   async function handleLaunch() {
     setVcRedistProgress(null);
     await LaunchGame().catch(() => {});
-    setVcRedistProgress(null);
     if (!multiInstance) setRunning(true);
   }
 
@@ -138,6 +139,18 @@ function HomePage() {
     await performDownload();
   }
 
+  async function handleBrowseInstallPath() {
+    try {
+      const path = await SelectInstallFolder();
+      if (path) {
+        setInstallPath(path);
+        setInstallPathError(null);
+      }
+    } catch {
+      setInstallPathError(t('install.oneDriveError'));
+    }
+  }
+
   function handleLogoClick() {
     const now = Date.now();
     logoClicks.current = now - lastLogoClickAt.current > EASTER_EGG_CLICK_WINDOW_MS ? 1 : logoClicks.current + 1;
@@ -195,7 +208,10 @@ function HomePage() {
           ) : online ? (
             <Button
               icon={<FaArrowDownShortWide />}
-              onClick={() => setShowInstallModal(true)}
+              onClick={() => {
+                setInstallPathError(null);
+                setShowInstallModal(true);
+              }}
             >
               {t('actions.download')}
             </Button>
@@ -220,13 +236,11 @@ function HomePage() {
           <PathInput
             value={installPath}
             placeholder={t('install.placeholder')}
-            onBrowse={async () => {
-              const path = await SelectInstallFolder();
-              if (path) {
-                setInstallPath(path);
-              }
-            }}
+            onBrowse={handleBrowseInstallPath}
           />
+          {installPathError && (
+            <p className="home-download-error">{installPathError}</p>
+          )}
         </Modal>
       )}
 
@@ -263,7 +277,7 @@ function HomePage() {
         )}
 
       {vcRedistProgress &&
-        vcRedistProgress.stage !== 'done' &&
+        (vcRedistProgress.stage === 'downloading' || vcRedistProgress.stage === 'installing') &&
         createPortal(
           <div className="home-download-overlay">
             <div className="home-download-box">
@@ -275,6 +289,12 @@ function HomePage() {
           </div>,
           document.body,
         )}
+
+      {vcRedistProgress?.stage === 'failed' && (
+        <p className="home-download-error">
+          {t('home.vcRedist.failed', { error: vcRedistProgress.error })}
+        </p>
+      )}
 
       {showEasterEgg && <EasterEggRunner onClose={() => setShowEasterEgg(false)} />}
     </div>

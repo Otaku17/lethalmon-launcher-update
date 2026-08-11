@@ -23,6 +23,8 @@ import {
   GetInstallDir,
   SelectInstallFolder,
   MoveInstallDir,
+  ResetInstallPath,
+  RepairGame,
   UninstallGame,
   GetGameOpts,
   SetGameOpt,
@@ -37,6 +39,11 @@ interface MigrationProgress {
   total: number;
   percent: number;
   file: string;
+}
+
+interface RepairProgress {
+  stage: 'downloading' | 'repairing' | 'done';
+  percent: number;
 }
 
 const LANGUAGES = ['fr', 'en', 'it'];
@@ -109,8 +116,14 @@ function SettingsPage() {
   const [migrating, setMigrating] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState<MigrationProgress | null>(null);
   const [migrationError, setMigrationError] = useState<string | null>(null);
+  const [installPathError, setInstallPathError] = useState<string | null>(null);
   const [showUninstallConfirm, setShowUninstallConfirm] = useState(false);
   const [showUninstallKillConfirm, setShowUninstallKillConfirm] = useState(false);
+  const [showRepairConfirm, setShowRepairConfirm] = useState(false);
+  const [showRepairKillConfirm, setShowRepairKillConfirm] = useState(false);
+  const [repairing, setRepairing] = useState(false);
+  const [repairProgress, setRepairProgress] = useState<RepairProgress | null>(null);
+  const [repairError, setRepairError] = useState<string | null>(null);
   const [uninstalling, setUninstalling] = useState(false);
 
   useEffect(() => {
@@ -146,6 +159,13 @@ function SettingsPage() {
   useEffect(() => {
     const unsubscribe = EventsOn('install:migration-progress', (data: MigrationProgress) => {
       setMigrationProgress(data);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = EventsOn('install:download-progress', (data: RepairProgress) => {
+      setRepairProgress(data);
     });
     return unsubscribe;
   }, []);
@@ -205,8 +225,26 @@ function SettingsPage() {
   }
 
   async function handleBrowseInstallPath() {
-    const path = await SelectInstallFolder();
-    if (path && path !== installPath) setPendingInstallPath(path);
+    try {
+      const path = await SelectInstallFolder();
+      if (path && path !== installPath) setPendingInstallPath(path);
+      setInstallPathError(null);
+    } catch {
+      setInstallPathError(t('install.oneDriveError'));
+    }
+  }
+
+  async function handleResetInstallPath() {
+    setInstallPathError(null);
+    setMigrationError(null);
+    setPendingInstallPath(null);
+    try {
+      const path = await ResetInstallPath();
+      setInstallPath(path);
+      refreshAppStatus();
+    } catch (err) {
+      setInstallPathError(String(err));
+    }
   }
 
   async function handleConfirmMoveInstall() {
@@ -256,6 +294,37 @@ function SettingsPage() {
     } finally {
       setUninstalling(false);
       setShowUninstallConfirm(false);
+    }
+  }
+
+  async function handleRepairClick() {
+    const isRunning = await IsGameRunning().catch(() => false);
+    if (isRunning) {
+      setShowRepairKillConfirm(true);
+      return;
+    }
+    setShowRepairConfirm(true);
+  }
+
+  async function handleConfirmKillAndRepair() {
+    setShowRepairKillConfirm(false);
+    await StopGame().catch(() => {});
+    setRunning(false);
+    setShowRepairConfirm(true);
+  }
+
+  async function handleConfirmRepair() {
+    setShowRepairConfirm(false);
+    setRepairing(true);
+    setRepairProgress(null);
+    setRepairError(null);
+    try {
+      await RepairGame();
+      refreshAppStatus();
+    } catch (err) {
+      setRepairError(String(err));
+    } finally {
+      setRepairing(false);
     }
   }
 
@@ -448,9 +517,14 @@ function SettingsPage() {
                   </div>
 
                   <div className="settings-field">
-                    <span className="settings-field__label">
-                      {t('settings.game.installPath')}
-                    </span>
+                    <div className="settings-field__row">
+                      <span className="settings-field__label">
+                        {t('settings.game.installPath')}
+                      </span>
+                      <Button variant="ghost" onClick={handleResetInstallPath}>
+                        {t('settings.game.resetInstallPath')}
+                      </Button>
+                    </div>
                     <PathInput
                       value={installPath}
                       placeholder={t('install.placeholder')}
@@ -476,8 +550,36 @@ function SettingsPage() {
                         {t('settings.game.installPathMoveError', { error: migrationError })}
                       </p>
                     )}
+                    {installPathError && (
+                      <p className="settings-field__description settings-field__description--error">
+                        {installPathError}
+                      </p>
+                    )}
                     <p className="settings-field__description">
                       {t('settings.game.installPathDescription')}
+                    </p>
+                  </div>
+
+                  <div className="settings-field">
+                    <div className="settings-field__row">
+                      <span className="settings-field__label">
+                        {t('settings.game.repair')}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        disabled={!installed}
+                        onClick={handleRepairClick}
+                      >
+                        {t('settings.game.repairAction')}
+                      </Button>
+                    </div>
+                    {repairError && (
+                      <p className="settings-field__description settings-field__description--error">
+                        {t('settings.game.repairError', { error: repairError })}
+                      </p>
+                    )}
+                    <p className="settings-field__description">
+                      {t('settings.game.repairDescription')}
                     </p>
                   </div>
 
@@ -581,6 +683,48 @@ function SettingsPage() {
           </div>,
           document.body,
         )}
+
+      {repairing &&
+        createPortal(
+          <div className="settings-migration-overlay">
+            <div className="settings-migration-box">
+              <Progress
+                label={t(`install.${repairProgress?.stage ?? 'downloading'}`)}
+                value={repairProgress?.percent ?? 0}
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {showRepairKillConfirm && (
+        <Modal
+          eyebrow="// ATTENTION"
+          title={t('settings.game.repairKillConfirmTitle')}
+          open={showRepairKillConfirm}
+          confirmLabel={t('settings.game.repairAction')}
+          confirmVariant="danger"
+          cancelLabel={t('install.cancel')}
+          onCancel={() => setShowRepairKillConfirm(false)}
+          onConfirm={handleConfirmKillAndRepair}
+        >
+          <p>{t('settings.game.repairKillConfirmDescription')}</p>
+        </Modal>
+      )}
+
+      {showRepairConfirm && (
+        <Modal
+          eyebrow="// REPARATION"
+          title={t('settings.game.repairConfirmTitle')}
+          open={showRepairConfirm}
+          confirmLabel={t('settings.game.repairAction')}
+          cancelLabel={t('install.cancel')}
+          onCancel={() => setShowRepairConfirm(false)}
+          onConfirm={handleConfirmRepair}
+        >
+          <p>{t('settings.game.repairConfirmDescription')}</p>
+        </Modal>
+      )}
 
       {showUninstallKillConfirm && (
         <Modal

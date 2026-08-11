@@ -22,7 +22,9 @@
     "confirm": "Conferma",
     "downloading": "DOWNLOAD IN CORSO",
     "extracting": "ESTRAZIONE",
-    "done": "COMPLETATO"
+    "repairing": "CONTROLLO DEI FILE",
+    "done": "COMPLETATO",
+    "oneDriveError": "Questa cartella è sincronizzata con OneDrive e non può essere usata per l'installazione. OneDrive può bloccare o spostare i file del gioco durante la sincronizzazione, con il rischio di danneggiare i salvataggi e gli aggiornamenti. Scegli una cartella al di fuori di OneDrive (ad esempio direttamente su C:\\)."
   },
   "sidebar": {
     "home": "Home",
@@ -55,7 +57,8 @@
     },
     "vcRedist": {
       "downloading": "DOWNLOAD DEI COMPONENTI RICHIESTI",
-      "installing": "INSTALLAZIONE DEI COMPONENTI RICHIESTI"
+      "installing": "INSTALLAZIONE DEI COMPONENTI RICHIESTI",
+      "failed": "Installazione dei componenti richiesti (Visual C++) non riuscita: {{error}}. Se è comparsa una finestra di conferma di Windows, accettala per consentire l'installazione, poi riavvia il gioco. Puoi anche installarli manualmente da https://aka.ms/vs/17/release/vc_redist.x64.exe."
     }
   },
   "changelog": {
@@ -110,11 +113,20 @@
       "restartRequiredNotice": "Il gioco è attualmente in esecuzione: le modifiche qui sotto avranno effetto solo al prossimo riavvio del gioco.",
       "installPath": "Cartella di installazione",
       "installPathDescription": "Scegli dove installare il gioco. Se esiste già un'installazione, verrà spostata nella nuova cartella.",
+      "resetInstallPath": "Reimposta il percorso",
       "installPathPendingMove": "Spostare l'installazione in: {{path}}?",
       "movePathConfirm": "Sposta",
       "openFolderAction": "Apri la cartella del gioco",
       "installPathMoveError": "Spostamento fallito: {{error}}",
       "migrationProgressLabel": "SPOSTAMENTO IN CORSO",
+      "repair": "Ripara il gioco",
+      "repairAction": "Ripara",
+      "repairDescription": "Riscarica l'ultima versione del gioco e sostituisce solo i file mancanti o danneggiati, senza toccare i salvataggi.",
+      "repairError": "Riparazione fallita: {{error}}",
+      "repairConfirmTitle": "Riparare il gioco?",
+      "repairConfirmDescription": "Il launcher controllerà tutti i file del gioco e riscaricherà solo quelli mancanti o danneggiati. I salvataggi non vengono modificati.",
+      "repairKillConfirmTitle": "Chiudere il gioco per ripararlo?",
+      "repairKillConfirmDescription": "Una o più istanze del gioco sono attualmente in esecuzione. Continuando verranno chiuse immediatamente (i progressi non salvati andranno persi) prima di procedere con la riparazione.",
       "uninstall": "Disinstalla il gioco",
       "uninstallAction": "Disinstalla",
       "uninstallDescription": "Rimuove tutti i file del gioco installati su questo computer.",

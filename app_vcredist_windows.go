@@ -26,18 +26,6 @@ const vcRedistInstallerURL = "https://aka.ms/vs/17/release/vc_redist.x64.exe"
 // itself, so presence can be checked without running anything.
 const vcRedistRegistryKey = `SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X64`
 
-// vcRedistProgressEvent reports "downloading" (with percent tracked as
-// bytes arrive) then "installing" (percent unknown — the silent installer
-// gives no progress feedback) while ensureVCRedist fetches and runs the
-// installer. Not emitted at all when the redistributable is already
-// present, which is the common case on every launch after the first.
-const vcRedistProgressEvent = "game:vcredist-progress"
-
-type vcRedistProgress struct {
-	Stage   string `json:"stage"`
-	Percent int    `json:"percent"`
-}
-
 // vcRedistInstalled reports whether the x64 Visual C++ Redistributable is
 // already present, via the registry key its installer writes.
 func vcRedistInstalled() bool {
@@ -85,9 +73,11 @@ func (a *App) ensureVCRedist() error {
 
 	wailsruntime.EventsEmit(a.ctx, vcRedistProgressEvent, vcRedistProgress{Stage: "installing"})
 
-	cmd := exec.Command(tmpPath, "/install", "/quiet", "/norestart")
-	hideWindow(cmd)
-	if err := cmd.Run(); err != nil && !isVCRedistSuccessExit(err) {
+	// The installer's manifest requires administrator privileges, and this
+	// app normally runs unelevated: a plain exec.Command here would fail
+	// immediately with ERROR_ELEVATION_REQUIRED instead of prompting for
+	// consent, silently leaving the runtime uninstalled every time.
+	if err := runElevated(tmpPath, "/install", "/quiet", "/norestart"); err != nil && !isVCRedistSuccessExit(err) {
 		return fmt.Errorf("vc_redist install failed: %w", err)
 	}
 

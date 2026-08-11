@@ -22,7 +22,9 @@
     "confirm": "Confirm",
     "downloading": "DOWNLOADING",
     "extracting": "EXTRACTING",
-    "done": "DONE"
+    "repairing": "CHECKING FILES",
+    "done": "DONE",
+    "oneDriveError": "This folder is synced by OneDrive and can't be used for the install. OneDrive can lock or move the game's files while syncing, which risks corrupting your saves and updates. Choose a folder outside of OneDrive (for example directly on C:\\)."
   },
   "sidebar": {
     "home": "Home",
@@ -55,7 +57,8 @@
     },
     "vcRedist": {
       "downloading": "DOWNLOADING REQUIRED COMPONENTS",
-      "installing": "INSTALLING REQUIRED COMPONENTS"
+      "installing": "INSTALLING REQUIRED COMPONENTS",
+      "failed": "Installing the required components (Visual C++) failed: {{error}}. If a Windows confirmation prompt appeared, accept it to allow the install, then relaunch the game. You can also install it manually from https://aka.ms/vs/17/release/vc_redist.x64.exe."
     }
   },
   "changelog": {
@@ -110,11 +113,20 @@
       "restartRequiredNotice": "The game is currently running: the changes below will only take effect the next time the game restarts.",
       "installPath": "Install folder",
       "installPathDescription": "Choose where the game is installed. If an installation already exists, it will be moved to the new folder.",
+      "resetInstallPath": "Reset path",
       "installPathPendingMove": "Move the installation to: {{path}}?",
       "movePathConfirm": "Move",
       "openFolderAction": "Open game folder",
       "installPathMoveError": "Move failed: {{error}}",
       "migrationProgressLabel": "MOVING",
+      "repair": "Repair the game",
+      "repairAction": "Repair",
+      "repairDescription": "Redownloads the latest version of the game and only replaces files that are missing or corrupted, without touching your saves.",
+      "repairError": "Repair failed: {{error}}",
+      "repairConfirmTitle": "Repair the game?",
+      "repairConfirmDescription": "The launcher will check every game file and redownload only the ones that are missing or corrupted. Your saves aren't affected.",
+      "repairKillConfirmTitle": "Close the game to repair it?",
+      "repairKillConfirmDescription": "One or more game instances are currently running. Continuing will close them immediately (unsaved progress will be lost) before proceeding with the repair.",
       "uninstall": "Uninstall the game",
       "uninstallAction": "Uninstall",
       "uninstallDescription": "Removes all game files installed on this computer.",

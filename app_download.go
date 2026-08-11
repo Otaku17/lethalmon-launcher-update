@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"net/http"
 	"os"
@@ -77,6 +78,123 @@ func (a *App) DownloadGame() error {
 	wailsruntime.EventsEmit(a.ctx, downloadProgressEvent, downloadProgress{Stage: "done", Percent: 100})
 
 	return nil
+}
+
+// RepairGame redownloads the game's latest release .zip and re-extracts only
+// the files that are missing or whose contents don't match the archive
+// (corrupted/manually edited files), leaving everything else untouched.
+// Progress is reported via the same "install:download-progress" event as
+// DownloadGame, with a "repairing" stage in place of "extracting".
+func (a *App) RepairGame() error {
+	check, err := a.GetGameVersionCheck()
+	if err != nil {
+		return err
+	}
+	if check.DownloadURL == "" {
+		return fmt.Errorf("no downloadable release found for the game")
+	}
+
+	installDir, err := a.GetInstallDir()
+	if err != nil {
+		return err
+	}
+
+	if running, _ := anyProcessRunning(gameProcessNames, installDir); running {
+		return fmt.Errorf("the game is currently running, close it before repairing")
+	}
+
+	tmpFile, err := os.CreateTemp("", "lethalmon-*.zip")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmpFile.Name()
+	defer os.Remove(tmpPath)
+
+	if err := a.downloadWithProgress(check.DownloadURL, tmpFile); err != nil {
+		tmpFile.Close()
+		return err
+	}
+	tmpFile.Close()
+
+	if err := os.MkdirAll(installDir, 0o755); err != nil {
+		return err
+	}
+
+	if err := a.repairFromZip(tmpPath, installDir); err != nil {
+		return err
+	}
+
+	versionFile := filepath.Join(installDir, "version.txt")
+	if err := os.WriteFile(versionFile, []byte(check.LatestVersion), 0o644); err != nil {
+		return err
+	}
+
+	wailsruntime.EventsEmit(a.ctx, downloadProgressEvent, downloadProgress{Stage: "done", Percent: 100})
+
+	return nil
+}
+
+// repairFromZip extracts each entry of the zip at zipPath into destDir only
+// if the file on disk is missing or its CRC32 doesn't match the archive's
+// copy, emitting a downloadProgressEvent (stage "repairing") after every
+// entry so the frontend can render progress across the whole archive.
+func (a *App) repairFromZip(zipPath, destDir string) error {
+	reader, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	cleanDest := filepath.Clean(destDir)
+	total := len(reader.File)
+
+	for i, file := range reader.File {
+		targetPath := filepath.Join(cleanDest, file.Name)
+
+		if targetPath != cleanDest && !strings.HasPrefix(targetPath, cleanDest+string(os.PathSeparator)) {
+			return fmt.Errorf("invalid file path in archive: %s", file.Name)
+		}
+
+		if file.FileInfo().IsDir() {
+			if err := os.MkdirAll(targetPath, 0o755); err != nil {
+				return err
+			}
+		} else if !fileMatchesZipEntry(targetPath, file) {
+			if err := extractZipFile(file, targetPath); err != nil {
+				return err
+			}
+		}
+
+		wailsruntime.EventsEmit(a.ctx, downloadProgressEvent, downloadProgress{
+			Stage:   "repairing",
+			Percent: percentOf(i+1, total),
+		})
+	}
+
+	return nil
+}
+
+// fileMatchesZipEntry reports whether the file at path already has the same
+// size and CRC32 checksum as the given zip entry, meaning it doesn't need to
+// be re-extracted.
+func fileMatchesZipEntry(path string, entry *zip.File) bool {
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() || uint64(info.Size()) != entry.UncompressedSize64 {
+		return false
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+
+	hash := crc32.NewIEEE()
+	if _, err := io.Copy(hash, f); err != nil {
+		return false
+	}
+
+	return hash.Sum32() == entry.CRC32
 }
 
 // downloadWithProgress streams url into dst, emitting a downloadProgressEvent
