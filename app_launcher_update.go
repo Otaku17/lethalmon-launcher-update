@@ -150,13 +150,12 @@ func (a *App) UpdateLauncher() error {
 		return err
 	}
 	tmpPath := tmpFile.Name()
+	tmpFile.Close()
 
-	if err := a.downloadLauncherUpdate(check.DownloadURL, tmpFile); err != nil {
-		tmpFile.Close()
+	if err := a.downloadLauncherUpdate(check.DownloadURL, tmpPath); err != nil {
 		os.Remove(tmpPath)
 		return err
 	}
-	tmpFile.Close()
 
 	tmpData, err := os.ReadFile(tmpPath)
 	if err != nil {
@@ -183,52 +182,16 @@ func (a *App) UpdateLauncher() error {
 	return nil
 }
 
-// downloadLauncherUpdate streams downloadURL into dst, emitting a
-// launcherUpdateProgressEvent after every chunk read so the frontend can
-// render a progress bar during the download stage.
-func (a *App) downloadLauncherUpdate(downloadURL string, dst *os.File) error {
-	client := &http.Client{Timeout: 10 * time.Minute}
-
-	resp, err := client.Get(downloadURL)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
-	}
-
-	total := resp.ContentLength
-	var written int64
-	buf := make([]byte, 64*1024)
-
-	for {
-		n, readErr := resp.Body.Read(buf)
-		if n > 0 {
-			if _, writeErr := dst.Write(buf[:n]); writeErr != nil {
-				return writeErr
-			}
-
-			written += int64(n)
-			percent := 0
-			if total > 0 {
-				percent = int(written * 100 / total)
-			}
-
-			wailsruntime.EventsEmit(a.ctx, launcherUpdateProgressEvent, launcherUpdateProgress{
-				Stage:   "downloading",
-				Percent: percent,
-			})
-		}
-
-		if readErr == io.EOF {
-			break
-		}
-		if readErr != nil {
-			return readErr
-		}
-	}
-
-	return nil
+// downloadLauncherUpdate downloads downloadURL into the file at destPath,
+// emitting a launcherUpdateProgressEvent after every chunk read so the
+// frontend can render a progress bar during the download stage. See
+// downloadFile (app_download.go) for the retry/resume/idle-timeout behavior,
+// shared with the game's own downloader.
+func (a *App) downloadLauncherUpdate(downloadURL, destPath string) error {
+	return downloadFile(downloadURL, destPath, func(percent int) {
+		wailsruntime.EventsEmit(a.ctx, launcherUpdateProgressEvent, launcherUpdateProgress{
+			Stage:   "downloading",
+			Percent: percent,
+		})
+	})
 }

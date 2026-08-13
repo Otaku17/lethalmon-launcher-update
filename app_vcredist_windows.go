@@ -4,12 +4,9 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/sys/windows/registry"
@@ -53,13 +50,12 @@ func (a *App) ensureVCRedist() error {
 		return err
 	}
 	tmpPath := tmpFile.Name()
+	tmpFile.Close()
 	defer os.Remove(tmpPath)
 
-	if err := a.downloadVCRedist(tmpFile); err != nil {
-		tmpFile.Close()
+	if err := a.downloadVCRedist(tmpPath); err != nil {
 		return err
 	}
-	tmpFile.Close()
 
 	// The redirect target is Microsoft's own CDN over HTTPS, but TLS only
 	// proves the connection wasn't tampered with in transit — it says
@@ -122,52 +118,16 @@ func isVCRedistSuccessExit(err error) bool {
 	return code == 3010 || code == 1638
 }
 
-// downloadVCRedist streams the installer into dst, emitting a
-// vcRedistProgressEvent after every chunk read so the frontend can render a
-// progress bar (mirrors downloadWithProgress in app_download.go).
-func (a *App) downloadVCRedist(dst *os.File) error {
-	client := &http.Client{Timeout: 5 * time.Minute}
-
-	resp, err := client.Get(vcRedistInstallerURL)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
-	}
-
-	total := resp.ContentLength
-	var written int64
-	buf := make([]byte, 64*1024)
-
-	for {
-		n, readErr := resp.Body.Read(buf)
-		if n > 0 {
-			if _, writeErr := dst.Write(buf[:n]); writeErr != nil {
-				return writeErr
-			}
-
-			written += int64(n)
-			percent := 0
-			if total > 0 {
-				percent = int(written * 100 / total)
-			}
-
-			wailsruntime.EventsEmit(a.ctx, vcRedistProgressEvent, vcRedistProgress{
-				Stage:   "downloading",
-				Percent: percent,
-			})
-		}
-
-		if readErr == io.EOF {
-			break
-		}
-		if readErr != nil {
-			return readErr
-		}
-	}
-
-	return nil
+// downloadVCRedist downloads the installer into the file at destPath,
+// emitting a vcRedistProgressEvent after every chunk read so the frontend
+// can render a progress bar. See downloadFile (app_download.go) for the
+// retry/resume/idle-timeout behavior, shared with the game and launcher
+// downloaders.
+func (a *App) downloadVCRedist(destPath string) error {
+	return downloadFile(vcRedistInstallerURL, destPath, func(percent int) {
+		wailsruntime.EventsEmit(a.ctx, vcRedistProgressEvent, vcRedistProgress{
+			Stage:   "downloading",
+			Percent: percent,
+		})
+	})
 }

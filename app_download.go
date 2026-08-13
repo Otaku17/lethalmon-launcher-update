@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -15,6 +16,18 @@ import (
 )
 
 const downloadProgressEvent = "install:download-progress"
+
+// downloadIdleTimeout bounds how long we'll wait without receiving any data
+// (including the initial connection/response) before treating the attempt as
+// stalled. It is deliberately not an overall timeout: a slow-but-steady
+// connection is allowed to take as long as it needs to finish, only a
+// connection that stops delivering bytes gets cut off.
+const downloadIdleTimeout = 30 * time.Second
+
+// downloadMaxAttempts is how many times a stalled or failed download attempt
+// is retried (resuming via a Range request, see downloadAttempt) before
+// giving up entirely.
+const downloadMaxAttempts = 6
 
 type downloadProgress struct {
 	// Stage is one of "downloading", "extracting" or "done".
@@ -48,13 +61,12 @@ func (a *App) DownloadGame() error {
 		return err
 	}
 	tmpPath := tmpFile.Name()
+	tmpFile.Close()
 	defer os.Remove(tmpPath)
 
-	if err := a.downloadWithProgress(check.DownloadURL, tmpFile); err != nil {
-		tmpFile.Close()
+	if err := a.downloadWithProgress(check.DownloadURL, tmpPath); err != nil {
 		return err
 	}
-	tmpFile.Close()
 
 	if err := os.MkdirAll(installDir, 0o755); err != nil {
 		return err
@@ -108,13 +120,12 @@ func (a *App) RepairGame() error {
 		return err
 	}
 	tmpPath := tmpFile.Name()
+	tmpFile.Close()
 	defer os.Remove(tmpPath)
 
-	if err := a.downloadWithProgress(check.DownloadURL, tmpFile); err != nil {
-		tmpFile.Close()
+	if err := a.downloadWithProgress(check.DownloadURL, tmpPath); err != nil {
 		return err
 	}
-	tmpFile.Close()
 
 	if err := os.MkdirAll(installDir, 0o755); err != nil {
 		return err
@@ -197,29 +208,126 @@ func fileMatchesZipEntry(path string, entry *zip.File) bool {
 	return hash.Sum32() == entry.CRC32
 }
 
-// downloadWithProgress streams url into dst, emitting a downloadProgressEvent
-// after every chunk read so the frontend can render a progress bar.
-func (a *App) downloadWithProgress(url string, dst *os.File) error {
-	client := &http.Client{Timeout: 10 * time.Minute}
+// downloadWithProgress downloads url into the file at destPath, emitting a
+// downloadProgressEvent after every chunk read so the frontend can render a
+// progress bar. See downloadFile for the retry/resume/idle-timeout behavior.
+func (a *App) downloadWithProgress(url, destPath string) error {
+	return downloadFile(url, destPath, func(percent int) {
+		wailsruntime.EventsEmit(a.ctx, downloadProgressEvent, downloadProgress{
+			Stage:   "downloading",
+			Percent: percent,
+		})
+	})
+}
 
-	resp, err := client.Get(url)
+// downloadFile downloads url into the file at destPath (which must already
+// exist, see os.CreateTemp), calling onProgress after every chunk read so
+// callers can render a progress bar. Shared between the game download (see
+// downloadWithProgress) and the launcher self-update (see
+// downloadLauncherUpdate in app_launcher_update.go).
+//
+// If an attempt stalls (see downloadIdleTimeout) or otherwise fails, it is
+// retried up to downloadMaxAttempts times. Each retry resumes from the bytes
+// already written instead of starting over, so a flaky connection only ever
+// has to re-fetch the tail end it lost.
+func downloadFile(url, destPath string, onProgress func(percent int)) error {
+	out, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0o644)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer out.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	var lastErr error
+
+	for attempt := 1; attempt <= downloadMaxAttempts; attempt++ {
+		err := downloadFileAttempt(url, out, onProgress)
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+		if attempt < downloadMaxAttempts {
+			time.Sleep(time.Duration(attempt) * 2 * time.Second)
+		}
+	}
+
+	return fmt.Errorf("download failed after %d attempts: %w", downloadMaxAttempts, lastErr)
+}
+
+// downloadFileAttempt makes a single attempt at downloading url, appending to
+// (or resuming) whatever is already in out via a Range request. The
+// connection is aborted if no data arrives for downloadIdleTimeout, which
+// covers both an unresponsive server and a body read that stalls partway
+// through — either way the caller retries rather than hanging indefinitely
+// or being cut off by an arbitrary total-duration cap.
+func downloadFileAttempt(url string, out *os.File, onProgress func(percent int)) error {
+	offset, err := out.Seek(0, io.SeekEnd)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Reset on every successful read (and once more after headers arrive);
+	// firing cancels ctx, which unblocks whatever read is currently in
+	// flight — the connection attempt, the response headers, or the body.
+	idleTimer := time.AfterFunc(downloadIdleTimeout, cancel)
+	defer idleTimer.Stop()
+
+	// stallOr turns a request/read error into a clearer message when it was
+	// actually caused by the idle timeout firing.
+	stallOr := func(err error) error {
+		if ctx.Err() != nil {
+			return fmt.Errorf("connection stalled after %s of inactivity", downloadIdleTimeout)
+		}
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	if offset > 0 {
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return stallOr(err)
+	}
+	defer resp.Body.Close()
+	idleTimer.Reset(downloadIdleTimeout)
+
+	written := offset
+	var total int64
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		// The server sent the full body instead of honoring our Range
+		// request, so any partial data we had is useless — start over.
+		if offset > 0 {
+			if err := out.Truncate(0); err != nil {
+				return err
+			}
+			if _, err := out.Seek(0, io.SeekStart); err != nil {
+				return err
+			}
+			written = 0
+		}
+		total = resp.ContentLength
+	case http.StatusPartialContent:
+		total = offset + resp.ContentLength
+	default:
 		return fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
 	}
 
-	total := resp.ContentLength
-	var written int64
 	buf := make([]byte, 64*1024)
-
 	for {
 		n, readErr := resp.Body.Read(buf)
 		if n > 0 {
-			if _, writeErr := dst.Write(buf[:n]); writeErr != nil {
+			idleTimer.Reset(downloadIdleTimeout)
+
+			if _, writeErr := out.Write(buf[:n]); writeErr != nil {
 				return writeErr
 			}
 
@@ -228,22 +336,16 @@ func (a *App) downloadWithProgress(url string, dst *os.File) error {
 			if total > 0 {
 				percent = int(written * 100 / total)
 			}
-
-			wailsruntime.EventsEmit(a.ctx, downloadProgressEvent, downloadProgress{
-				Stage:   "downloading",
-				Percent: percent,
-			})
+			onProgress(percent)
 		}
 
 		if readErr == io.EOF {
-			break
+			return nil
 		}
 		if readErr != nil {
-			return readErr
+			return stallOr(readErr)
 		}
 	}
-
-	return nil
 }
 
 // extractZipWithProgress extracts every entry of the zip at zipPath into
