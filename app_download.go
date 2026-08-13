@@ -208,44 +208,58 @@ func fileMatchesZipEntry(path string, entry *zip.File) bool {
 	return hash.Sum32() == entry.CRC32
 }
 
-// downloadWithProgress downloads url into the file at destPath (which must
-// already exist, see os.CreateTemp), emitting a downloadProgressEvent after
-// every chunk read so the frontend can render a progress bar.
+// downloadWithProgress downloads url into the file at destPath, emitting a
+// downloadProgressEvent after every chunk read so the frontend can render a
+// progress bar. See downloadFile for the retry/resume/idle-timeout behavior.
+func (a *App) downloadWithProgress(url, destPath string) error {
+	return downloadFile(url, destPath, func(percent int) {
+		wailsruntime.EventsEmit(a.ctx, downloadProgressEvent, downloadProgress{
+			Stage:   "downloading",
+			Percent: percent,
+		})
+	})
+}
+
+// downloadFile downloads url into the file at destPath (which must already
+// exist, see os.CreateTemp), calling onProgress after every chunk read so
+// callers can render a progress bar. Shared between the game download (see
+// downloadWithProgress) and the launcher self-update (see
+// downloadLauncherUpdate in app_launcher_update.go).
 //
 // If an attempt stalls (see downloadIdleTimeout) or otherwise fails, it is
 // retried up to downloadMaxAttempts times. Each retry resumes from the bytes
 // already written instead of starting over, so a flaky connection only ever
 // has to re-fetch the tail end it lost.
-func (a *App) downloadWithProgress(url, destPath string) error {
-	var lastErr error
-
-	for attempt := 1; attempt <= downloadMaxAttempts; attempt++ {
-		if err := a.downloadAttempt(url, destPath); err != nil {
-			lastErr = err
-			if attempt < downloadMaxAttempts {
-				time.Sleep(time.Duration(attempt) * 2 * time.Second)
-			}
-			continue
-		}
-		return nil
-	}
-
-	return fmt.Errorf("download failed after %d attempts: %w", downloadMaxAttempts, lastErr)
-}
-
-// downloadAttempt makes a single attempt at downloading url, appending to
-// (or resuming) whatever is already at destPath via a Range request. The
-// connection is aborted if no data arrives for downloadIdleTimeout, which
-// covers both an unresponsive server and a body read that stalls partway
-// through — either way the caller retries rather than hanging indefinitely
-// or being cut off by an arbitrary total-duration cap.
-func (a *App) downloadAttempt(url, destPath string) error {
+func downloadFile(url, destPath string, onProgress func(percent int)) error {
 	out, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0o644)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
 
+	var lastErr error
+
+	for attempt := 1; attempt <= downloadMaxAttempts; attempt++ {
+		err := downloadFileAttempt(url, out, onProgress)
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+		if attempt < downloadMaxAttempts {
+			time.Sleep(time.Duration(attempt) * 2 * time.Second)
+		}
+	}
+
+	return fmt.Errorf("download failed after %d attempts: %w", downloadMaxAttempts, lastErr)
+}
+
+// downloadFileAttempt makes a single attempt at downloading url, appending to
+// (or resuming) whatever is already in out via a Range request. The
+// connection is aborted if no data arrives for downloadIdleTimeout, which
+// covers both an unresponsive server and a body read that stalls partway
+// through — either way the caller retries rather than hanging indefinitely
+// or being cut off by an arbitrary total-duration cap.
+func downloadFileAttempt(url string, out *os.File, onProgress func(percent int)) error {
 	offset, err := out.Seek(0, io.SeekEnd)
 	if err != nil {
 		return err
@@ -260,6 +274,15 @@ func (a *App) downloadAttempt(url, destPath string) error {
 	idleTimer := time.AfterFunc(downloadIdleTimeout, cancel)
 	defer idleTimer.Stop()
 
+	// stallOr turns a request/read error into a clearer message when it was
+	// actually caused by the idle timeout firing.
+	stallOr := func(err error) error {
+		if ctx.Err() != nil {
+			return fmt.Errorf("connection stalled after %s of inactivity", downloadIdleTimeout)
+		}
+		return err
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -270,10 +293,7 @@ func (a *App) downloadAttempt(url, destPath string) error {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		if ctx.Err() != nil {
-			return fmt.Errorf("connection stalled (no response within %s)", downloadIdleTimeout)
-		}
-		return err
+		return stallOr(err)
 	}
 	defer resp.Body.Close()
 	idleTimer.Reset(downloadIdleTimeout)
@@ -316,21 +336,14 @@ func (a *App) downloadAttempt(url, destPath string) error {
 			if total > 0 {
 				percent = int(written * 100 / total)
 			}
-
-			wailsruntime.EventsEmit(a.ctx, downloadProgressEvent, downloadProgress{
-				Stage:   "downloading",
-				Percent: percent,
-			})
+			onProgress(percent)
 		}
 
 		if readErr == io.EOF {
 			return nil
 		}
 		if readErr != nil {
-			if ctx.Err() != nil {
-				return fmt.Errorf("connection stalled (no data for %s)", downloadIdleTimeout)
-			}
-			return readErr
+			return stallOr(readErr)
 		}
 	}
 }

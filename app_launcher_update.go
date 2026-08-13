@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/ed25519"
 	"encoding/base64"
 	"fmt"
@@ -183,127 +182,16 @@ func (a *App) UpdateLauncher() error {
 	return nil
 }
 
-// downloadLauncherUpdate downloads downloadURL into the file at destPath
-// (which must already exist, see os.CreateTemp), emitting a
-// launcherUpdateProgressEvent after every chunk read so the frontend can
-// render a progress bar during the download stage.
-//
-// If an attempt stalls (see downloadIdleTimeout, shared with the game's own
-// downloader in app_download.go) or otherwise fails, it is retried up to
-// downloadMaxAttempts times, resuming from the bytes already written instead
-// of starting over — see downloadLauncherUpdateAttempt.
+// downloadLauncherUpdate downloads downloadURL into the file at destPath,
+// emitting a launcherUpdateProgressEvent after every chunk read so the
+// frontend can render a progress bar during the download stage. See
+// downloadFile (app_download.go) for the retry/resume/idle-timeout behavior,
+// shared with the game's own downloader.
 func (a *App) downloadLauncherUpdate(downloadURL, destPath string) error {
-	var lastErr error
-
-	for attempt := 1; attempt <= downloadMaxAttempts; attempt++ {
-		if err := a.downloadLauncherUpdateAttempt(downloadURL, destPath); err != nil {
-			lastErr = err
-			if attempt < downloadMaxAttempts {
-				time.Sleep(time.Duration(attempt) * 2 * time.Second)
-			}
-			continue
-		}
-		return nil
-	}
-
-	return fmt.Errorf("download failed after %d attempts: %w", downloadMaxAttempts, lastErr)
-}
-
-// downloadLauncherUpdateAttempt makes a single attempt at downloading
-// downloadURL, appending to (or resuming) whatever is already at destPath
-// via a Range request. The connection is aborted if no data arrives for
-// downloadIdleTimeout, covering both an unresponsive server and a body read
-// that stalls partway through — either way the caller retries rather than
-// hanging indefinitely or being cut off by an arbitrary total-duration cap.
-func (a *App) downloadLauncherUpdateAttempt(downloadURL, destPath string) error {
-	out, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE, 0o644)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	offset, err := out.Seek(0, io.SeekEnd)
-	if err != nil {
-		return err
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	idleTimer := time.AfterFunc(downloadIdleTimeout, cancel)
-	defer idleTimer.Stop()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
-	if err != nil {
-		return err
-	}
-	if offset > 0 {
-		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		if ctx.Err() != nil {
-			return fmt.Errorf("connection stalled (no response within %s)", downloadIdleTimeout)
-		}
-		return err
-	}
-	defer resp.Body.Close()
-	idleTimer.Reset(downloadIdleTimeout)
-
-	written := offset
-	var total int64
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		// The server sent the full body instead of honoring our Range
-		// request, so any partial data we had is useless — start over.
-		if offset > 0 {
-			if err := out.Truncate(0); err != nil {
-				return err
-			}
-			if _, err := out.Seek(0, io.SeekStart); err != nil {
-				return err
-			}
-			written = 0
-		}
-		total = resp.ContentLength
-	case http.StatusPartialContent:
-		total = offset + resp.ContentLength
-	default:
-		return fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
-	}
-
-	buf := make([]byte, 64*1024)
-	for {
-		n, readErr := resp.Body.Read(buf)
-		if n > 0 {
-			idleTimer.Reset(downloadIdleTimeout)
-
-			if _, writeErr := out.Write(buf[:n]); writeErr != nil {
-				return writeErr
-			}
-
-			written += int64(n)
-			percent := 0
-			if total > 0 {
-				percent = int(written * 100 / total)
-			}
-
-			wailsruntime.EventsEmit(a.ctx, launcherUpdateProgressEvent, launcherUpdateProgress{
-				Stage:   "downloading",
-				Percent: percent,
-			})
-		}
-
-		if readErr == io.EOF {
-			return nil
-		}
-		if readErr != nil {
-			if ctx.Err() != nil {
-				return fmt.Errorf("connection stalled (no data for %s)", downloadIdleTimeout)
-			}
-			return readErr
-		}
-	}
+	return downloadFile(downloadURL, destPath, func(percent int) {
+		wailsruntime.EventsEmit(a.ctx, launcherUpdateProgressEvent, launcherUpdateProgress{
+			Stage:   "downloading",
+			Percent: percent,
+		})
+	})
 }
