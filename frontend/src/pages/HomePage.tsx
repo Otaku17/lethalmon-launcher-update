@@ -19,7 +19,7 @@ import {
   StopGame,
   IsGameRunning,
   OpenInstallFolder,
-} from '../../wailsjs/go/main/App';
+} from '../../wailsjs/go/backend/App';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
 import ThemedImage from '../components/hud/ThemedImage';
 import GameVersionText from '../components/hud/GameVersionText';
@@ -141,7 +141,7 @@ function HomePage() {
 
   async function handleBrowseInstallPath() {
     try {
-      const path = await SelectInstallFolder();
+      const path = await SelectInstallFolder(t('install.folderPickerTitle'));
       if (path) {
         setInstallPath(path);
         setInstallPathError(null);

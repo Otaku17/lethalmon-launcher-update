@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package backend
 
 import (
 	"os"
@@ -9,13 +9,13 @@ import (
 	"time"
 )
 
-// applyLauncherUpdate runs inside a freshly downloaded launcher build,
-// invoked by the old build's installLauncherUpdate with updateApplyFlag. It
+// ApplyLauncherUpdate runs inside a freshly downloaded launcher build,
+// invoked by the old build's installLauncherUpdate with UpdateApplyFlag. It
 // waits for targetExePath (the old build, currently exiting) to become
 // replaceable — Windows keeps a running .exe locked until the process has
 // actually exited — then moves itself into that location and hands off by
 // launching the newly-installed exe.
-func applyLauncherUpdate(targetExePath string) {
+func ApplyLauncherUpdate(targetExePath string) {
 	selfPath, err := os.Executable()
 	if err != nil {
 		return
@@ -27,7 +27,7 @@ func applyLauncherUpdate(targetExePath string) {
 
 	const maxAttempts = 30
 	for attempt := 0; attempt < maxAttempts; attempt++ {
-		if err := replaceExecutable(selfPath, targetExePath); err == nil {
+		if err := ReplaceExecutable(selfPath, targetExePath); err == nil {
 			break
 		}
 		time.Sleep(time.Second)
@@ -37,10 +37,10 @@ func applyLauncherUpdate(targetExePath string) {
 	_ = cmd.Start()
 }
 
-// replaceExecutable moves src onto dst. os.Rename alone would fail across
+// ReplaceExecutable moves src onto dst. os.Rename alone would fail across
 // drives (e.g. a %TEMP% download landing on a different volume than the
 // install directory), so it falls back to a copy + remove in that case.
-func replaceExecutable(src, dst string) error {
+func ReplaceExecutable(src, dst string) error {
 	if err := os.Rename(src, dst); err == nil {
 		return nil
 	}

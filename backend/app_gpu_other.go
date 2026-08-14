@@ -1,6 +1,6 @@
 //go:build !windows
 
-package main
+package backend
 
 // GetGpuPreference is only supported on Windows.
 func (a *App) GetGpuPreference() (bool, error) {

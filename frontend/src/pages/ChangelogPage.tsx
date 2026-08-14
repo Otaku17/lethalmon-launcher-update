@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getReleases, type ReleaseKind } from '../lib/releasesCache';
 import { extractTitle, extractExcerpt } from '../lib/markdownExcerpt';
-import { main } from '../../wailsjs/go/models';
+import { backend } from '../../wailsjs/go/models';
 import './Pages.css';
 import './ChangelogPage.css';
 import Modal from '../components/hud/Modal';
@@ -25,9 +25,9 @@ function ChangelogPage() {
   const { t, i18n } = useTranslation();
   const { online } = useAppStatus();
   const [tab, setTab] = useState<ReleaseKind>('game');
-  const [releases, setReleases] = useState<main.Release[] | null>(null);
+  const [releases, setReleases] = useState<backend.Release[] | null>(null);
   const [error, setError] = useState(false);
-  const [selected, setSelected] = useState<main.Release | null>(null);
+  const [selected, setSelected] = useState<backend.Release | null>(null);
 
   useEffect(() => {
     if (!online) {

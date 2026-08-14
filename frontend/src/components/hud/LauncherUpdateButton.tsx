@@ -6,7 +6,7 @@ import { Alert } from './Alert';
 import Button from './Button';
 import Progress from './Progress';
 import './LauncherUpdateButton.css';
-import { UpdateLauncher } from '../../../wailsjs/go/main/App';
+import { UpdateLauncher } from '../../../wailsjs/go/backend/App';
 import { EventsOn } from '../../../wailsjs/runtime/runtime';
 import { useAppStatus } from '../../lib/appStatus';
 

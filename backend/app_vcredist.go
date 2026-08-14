@@ -1,4 +1,4 @@
-package main
+package backend
 
 // vcRedistProgressEvent reports "downloading" (with percent tracked as
 // bytes arrive) then "installing" (percent unknown — the silent installer

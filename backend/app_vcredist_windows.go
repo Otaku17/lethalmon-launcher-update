@@ -1,16 +1,21 @@
 //go:build windows
 
-package main
+package backend
 
 import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/sys/windows/registry"
 )
+
+// vcRedistSignerOrg is the organization the Visual C++ Redistributable
+// installer's Authenticode certificate must be issued to. Anything else —
+// including a perfectly valid signature from some other publisher — is
+// refused before the installer can run elevated.
+const vcRedistSignerOrg = "Microsoft Corporation"
 
 // vcRedistInstallerURL is Microsoft's permanent redirect to the latest x64
 // Visual C++ Redistributable installer (2015-2022 line) — what the game's
@@ -63,7 +68,7 @@ func (a *App) ensureVCRedist() error {
 	// ever compromised. Checking the Authenticode signature confirms
 	// what's about to run silently as an installer is genuinely
 	// Microsoft's, not just "downloaded over a secure connection".
-	if err := verifyMicrosoftSignature(tmpPath); err != nil {
+	if err := VerifyMicrosoftSignature(tmpPath); err != nil {
 		return err
 	}
 
@@ -73,7 +78,7 @@ func (a *App) ensureVCRedist() error {
 	// app normally runs unelevated: a plain exec.Command here would fail
 	// immediately with ERROR_ELEVATION_REQUIRED instead of prompting for
 	// consent, silently leaving the runtime uninstalled every time.
-	if err := runElevated(tmpPath, "/install", "/quiet", "/norestart"); err != nil && !isVCRedistSuccessExit(err) {
+	if err := runElevated(tmpPath, "/install", "/quiet", "/norestart"); err != nil && !IsVCRedistSuccessExit(err) {
 		return fmt.Errorf("vc_redist install failed: %w", err)
 	}
 
@@ -82,34 +87,26 @@ func (a *App) ensureVCRedist() error {
 	return nil
 }
 
-// verifyMicrosoftSignature checks that path carries a valid Authenticode
-// signature issued to Microsoft Corporation, via PowerShell's
-// Get-AuthenticodeSignature (there's no cgo-free way to call WinVerifyTrust
-// directly from Go). Guards against running a tampered or substituted
-// installer if aka.ms's redirect target or Microsoft's CDN were ever
-// compromised — HTTPS alone only proves the download wasn't altered
-// in transit, not that it's genuinely Microsoft's file.
-func verifyMicrosoftSignature(path string) error {
-	quotedPath := "'" + strings.ReplaceAll(path, "'", "''") + "'"
-	script := "$sig = Get-AuthenticodeSignature -LiteralPath " + quotedPath + "; " +
-		"if ($sig.Status -ne 'Valid') { exit 1 }; " +
-		"if ($sig.SignerCertificate.Subject -notlike '*O=Microsoft Corporation*') { exit 1 }; " +
-		"exit 0"
-
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", script)
-	hideWindow(cmd)
-	if err := cmd.Run(); err != nil {
+// VerifyMicrosoftSignature checks that path carries a valid Authenticode
+// signature issued to Microsoft Corporation, by calling Windows'
+// WinVerifyTrust directly (see authenticode_windows.go). Guards against
+// running a tampered or substituted installer if aka.ms's redirect target or
+// Microsoft's CDN were ever compromised — HTTPS alone only proves the
+// download wasn't altered in transit, not that it's genuinely Microsoft's
+// file.
+func VerifyMicrosoftSignature(path string) error {
+	if err := VerifyAuthenticodeOrg(path, vcRedistSignerOrg); err != nil {
 		return fmt.Errorf("vc_redist installer failed Microsoft signature verification: %w", err)
 	}
 	return nil
 }
 
-// isVCRedistSuccessExit reports whether err from running the installer
+// IsVCRedistSuccessExit reports whether err from running the installer
 // actually indicates success: 3010 means it succeeded but wants a reboot
 // (irrelevant here — the DLLs it just registered are usable immediately),
 // and 1638 means a newer version is already installed. Both are wins, not
 // failures, but exec.Cmd.Run only returns nil for exit code 0.
-func isVCRedistSuccessExit(err error) bool {
+func IsVCRedistSuccessExit(err error) bool {
 	exitErr, ok := err.(*exec.ExitError)
 	if !ok {
 		return false
@@ -120,11 +117,11 @@ func isVCRedistSuccessExit(err error) bool {
 
 // downloadVCRedist downloads the installer into the file at destPath,
 // emitting a vcRedistProgressEvent after every chunk read so the frontend
-// can render a progress bar. See downloadFile (app_download.go) for the
+// can render a progress bar. See DownloadFile (app_download.go) for the
 // retry/resume/idle-timeout behavior, shared with the game and launcher
 // downloaders.
 func (a *App) downloadVCRedist(destPath string) error {
-	return downloadFile(vcRedistInstallerURL, destPath, func(percent int) {
+	return DownloadFile(vcRedistInstallerURL, destPath, func(percent int) {
 		wailsruntime.EventsEmit(a.ctx, vcRedistProgressEvent, vcRedistProgress{
 			Stage:   "downloading",
 			Percent: percent,

@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package backend
 
 import (
 	"os"
@@ -9,8 +9,8 @@ import (
 )
 
 // installLauncherUpdate hands off to the freshly downloaded build at
-// newExePath: it launches it with updateApplyFlag, which makes it briefly
-// run headlessly (see applyLauncherUpdate) to wait out this process's exit,
+// newExePath: it launches it with UpdateApplyFlag, which makes it briefly
+// run headlessly (see ApplyLauncherUpdate) to wait out this process's exit,
 // move itself into place over the current install, and then start
 // normally.
 //
@@ -29,6 +29,6 @@ func installLauncherUpdate(newExePath string) error {
 		return err
 	}
 
-	cmd := exec.Command(newExePath, updateApplyFlag, currentExe)
+	cmd := exec.Command(newExePath, UpdateApplyFlag, currentExe)
 	return cmd.Start()
 }

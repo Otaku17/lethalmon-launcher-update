@@ -5,7 +5,7 @@ import {
   GetLauncherVersion,
   GetLauncherVersionCheck,
   IsGameRunning,
-} from '../../wailsjs/go/main/App';
+} from '../../wailsjs/go/backend/App';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
 
 export interface AppStatus {

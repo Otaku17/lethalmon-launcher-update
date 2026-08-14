@@ -1,4 +1,4 @@
-package main
+package backend
 
 import (
 	"encoding/json"
@@ -109,35 +109,49 @@ func (a *App) GetGameVersionCheck() (GameVersionCheck, error) {
 	}
 
 	latestRelease := releases[0]
-	latest := trimVersion(latestRelease.TagName)
-
-	var downloadURL string
-	for _, asset := range latestRelease.Assets {
-		if strings.HasSuffix(asset.Name, ".zip") {
-			downloadURL = asset.BrowserDownloadURL
-			break
-		}
-	}
+	latest := TrimVersion(latestRelease.TagName)
 
 	return GameVersionCheck{
 		CurrentVersion:  current,
 		LatestVersion:   latest,
-		UpdateAvailable: current == "" || compareVersions(latest, current) > 0,
-		DownloadURL:     downloadURL,
+		UpdateAvailable: current == "" || CompareVersions(latest, current) > 0,
+		DownloadURL:     PickGameDownloadURL(latestRelease.Assets),
 		ReleaseURL:      latestRelease.HTMLURL,
 	}, nil
 }
 
-// trimVersion strips a leading "v" from a git tag, e.g. "v1.3.9" -> "1.3.9".
-func trimVersion(v string) string {
+// PickGameDownloadURL returns the first .zip attached to a release — the game
+// archive — or an empty string if the release has none, which callers treat
+// as "nothing installable here" rather than as an error.
+func PickGameDownloadURL(assets []ReleaseAsset) string {
+	for _, asset := range assets {
+		if strings.HasSuffix(asset.Name, ".zip") {
+			return asset.BrowserDownloadURL
+		}
+	}
+	return ""
+}
+
+// TrimVersion strips a leading "v" from a git tag, e.g. "v1.3.9" -> "1.3.9".
+func TrimVersion(v string) string {
 	return strings.TrimPrefix(strings.TrimSpace(v), "v")
 }
 
-// compareVersions returns 1 if a > b, -1 if a < b, 0 if equal (or not
-// comparable). Dotted numeric versions only (e.g. "1.10.0" > "1.9.0").
-func compareVersions(a, b string) int {
-	partsA := parseVersionParts(a)
-	partsB := parseVersionParts(b)
+// CompareVersions returns 1 if a > b, -1 if a < b, and 0 if they're equal.
+// Dotted numeric versions only (e.g. "1.10.0" > "1.9.0"), compared segment by
+// segment so ordering doesn't fall back to string comparison — where "1.10.0"
+// would sort below "1.9.0" and hide an update from everyone on 1.9.x.
+//
+// A version that isn't purely dotted-numeric ("nightly", "1.4.0-rc1") parses
+// to no segments at all and therefore compares as 0.0.0 — i.e. older than
+// anything. Concretely, tagging a release "v1.4.1-hotfix" would leave every
+// player seeing no update available, silently. Tags are plain numeric today
+// (the release workflow enforces that the launcher's tag matches
+// frontend/package.json), so this is a constraint on tagging rather than a
+// live bug — see TestCompareVersionsTreatsUnparseableAsOldest.
+func CompareVersions(a, b string) int {
+	partsA := ParseVersionParts(a)
+	partsB := ParseVersionParts(b)
 
 	maxLen := len(partsA)
 	if len(partsB) > maxLen {
@@ -164,11 +178,11 @@ func compareVersions(a, b string) int {
 	return 0
 }
 
-// parseVersionParts splits a dotted version string into numeric segments
+// ParseVersionParts splits a dotted version string into numeric segments
 // (e.g. "1.10.0" -> [1, 10, 0]), returning nil if any segment isn't a
 // plain integer.
-func parseVersionParts(v string) []int {
-	v = trimVersion(v)
+func ParseVersionParts(v string) []int {
+	v = TrimVersion(v)
 	if v == "" {
 		return nil
 	}

@@ -18,6 +18,7 @@
     "description": "Scegli la cartella in cui installare il gioco.",
     "placeholder": "Nessuna cartella selezionata",
     "browse": "Sfoglia",
+    "folderPickerTitle": "Scegli la cartella di installazione",
     "cancel": "Annulla",
     "confirm": "Conferma",
     "downloading": "DOWNLOAD IN CORSO",

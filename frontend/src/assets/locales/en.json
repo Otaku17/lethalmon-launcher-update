@@ -18,6 +18,7 @@
     "description": "Choose the folder where the game should be installed.",
     "placeholder": "No folder selected",
     "browse": "Browse",
+    "folderPickerTitle": "Choose the installation folder",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "downloading": "DOWNLOADING",

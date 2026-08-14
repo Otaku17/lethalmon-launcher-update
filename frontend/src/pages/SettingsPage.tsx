@@ -31,7 +31,7 @@ import {
   ResetGameOptsDefaults,
   IsGameRunning,
   StopGame,
-} from '../../wailsjs/go/main/App';
+} from '../../wailsjs/go/backend/App';
 import { useAppStatus } from '../lib/appStatus';
 
 interface MigrationProgress {
@@ -226,7 +226,7 @@ function SettingsPage() {
 
   async function handleBrowseInstallPath() {
     try {
-      const path = await SelectInstallFolder();
+      const path = await SelectInstallFolder(t('install.folderPickerTitle'));
       if (path && path !== installPath) setPendingInstallPath(path);
       setInstallPathError(null);
     } catch {

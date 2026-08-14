@@ -1,4 +1,4 @@
-package main
+package backend
 
 import (
 	"errors"
@@ -34,7 +34,7 @@ func (a *App) MoveInstallDir(newPath string) error {
 		return nil
 	}
 
-	if running, _ := anyProcessRunning(gameProcessNames, oldPath); running {
+	if running, _ := anyProcessRunning(GameProcessNames, oldPath); running {
 		return errors.New("the game is currently running, close it before moving the installation")
 	}
 
@@ -67,35 +67,35 @@ func (a *App) MoveInstallDir(newPath string) error {
 		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 			return err
 		}
-		if err := moveFile(src, dst); err != nil {
+		if err := MoveFile(src, dst); err != nil {
 			return err
 		}
 
 		wailsruntime.EventsEmit(a.ctx, installMigrationEvent, migrationProgress{
 			Current: i + 1,
 			Total:   total,
-			Percent: percentOf(i+1, total),
+			Percent: PercentOf(i+1, total),
 			File:    rel,
 		})
 	}
 
 	os.RemoveAll(oldPath)
 
-	cfg := loadConfig()
+	cfg := LoadConfig()
 	cfg.InstallDir = newPath
-	return saveConfig(cfg)
+	return SaveConfig(cfg)
 }
 
-// uninstallKeepList lists the save-related files/folders that UninstallGame
+// UninstallKeepList lists the save-related files/folders that UninstallGame
 // preserves, so removing the game doesn't wipe the player's progress.
-var uninstallKeepList = map[string]bool{
+var UninstallKeepList = map[string]bool{
 	"Saves":                true,
 	"GlobalHallOfFame.dat": true,
 	"GlobalPokedex.dat":    true,
 }
 
 // UninstallGame removes every file from the game's install directory except
-// save data (see uninstallKeepList), leaving the (now near-empty) folder in
+// save data (see UninstallKeepList), leaving the (now near-empty) folder in
 // place.
 func (a *App) UninstallGame() error {
 	installDir, err := a.GetInstallDir()
@@ -103,7 +103,7 @@ func (a *App) UninstallGame() error {
 		return err
 	}
 
-	if running, _ := anyProcessRunning(gameProcessNames, installDir); running {
+	if running, _ := anyProcessRunning(GameProcessNames, installDir); running {
 		return errors.New("the game is currently running, close it before uninstalling")
 	}
 
@@ -113,7 +113,7 @@ func (a *App) UninstallGame() error {
 	}
 
 	for _, entry := range entries {
-		if uninstallKeepList[entry.Name()] {
+		if UninstallKeepList[entry.Name()] {
 			continue
 		}
 		if err := os.RemoveAll(filepath.Join(installDir, entry.Name())); err != nil {
@@ -124,21 +124,21 @@ func (a *App) UninstallGame() error {
 	return nil
 }
 
-// percentOf returns current as a percentage of total, treating a total of
+// PercentOf returns current as a percentage of total, treating a total of
 // zero as already complete rather than dividing by zero.
-func percentOf(current, total int) int {
+func PercentOf(current, total int) int {
 	if total == 0 {
 		return 100
 	}
 	return current * 100 / total
 }
 
-// moveFile relocates a single file, falling back to a copy+delete when a
+// MoveFile relocates a single file, falling back to a copy+delete when a
 // plain rename isn't possible (e.g. moving across drives, or the source
 // being briefly locked). Failing to delete the now-copied source file is
 // not treated as fatal: the file was successfully migrated either way, and
 // the leftover original gets a final cleanup pass via os.RemoveAll(oldPath).
-func moveFile(src, dst string) error {
+func MoveFile(src, dst string) error {
 	if err := os.Rename(src, dst); err == nil {
 		return nil
 	}

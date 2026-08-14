@@ -1,4 +1,4 @@
-package main
+package backend
 
 import (
 	"crypto/ed25519"
@@ -15,32 +15,57 @@ import (
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// verifyLauncherUpdateSignature downloads the signature file at
+// VerifyLauncherUpdateSignature downloads the signature file at
 // signatureURL (see tools/updatesign) and checks it against data using the
 // public key shared with the signing tool (see internal/updatekey).
-func verifyLauncherUpdateSignature(signatureURL string, data []byte) error {
+func VerifyLauncherUpdateSignature(signatureURL string, data []byte) error {
 	pubKey, err := updatekey.Public()
 	if err != nil {
 		return err
 	}
 
+	sigB64, err := FetchUpdateSignature(signatureURL)
+	if err != nil {
+		return err
+	}
+
+	return VerifyUpdateSignature(pubKey, data, sigB64)
+}
+
+// FetchUpdateSignature downloads the base64-encoded signature published
+// alongside a launcher release.
+func FetchUpdateSignature(signatureURL string) ([]byte, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(signatureURL)
 	if err != nil {
-		return fmt.Errorf("fetch update signature: %w", err)
+		return nil, fmt.Errorf("fetch update signature: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("fetch update signature: HTTP %d", resp.StatusCode)
+		return nil, fmt.Errorf("fetch update signature: HTTP %d", resp.StatusCode)
 	}
 
 	sigB64, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("read update signature: %w", err)
+		return nil, fmt.Errorf("read update signature: %w", err)
 	}
 
-	signature, err := base64.StdEncoding.DecodeString(string(sigB64))
+	return sigB64, nil
+}
+
+// VerifyUpdateSignature checks data against a base64-encoded ed25519
+// signature. It's split out from the download above so the decision itself —
+// the one step standing between a downloaded .exe and it replacing the
+// running launcher — can be exercised by tests without a network round trip.
+//
+// Surrounding whitespace is tolerated because the signature travels as a text
+// file: a stray trailing newline (from an editor, a CI step, a text-mode
+// transfer) would otherwise fail base64 decoding and surface as "signature
+// verification failed", pointing at a compromised artifact when the real
+// problem is formatting.
+func VerifyUpdateSignature(pubKey ed25519.PublicKey, data, sigB64 []byte) error {
+	signature, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(sigB64)))
 	if err != nil {
 		return fmt.Errorf("invalid update signature encoding: %w", err)
 	}
@@ -81,10 +106,30 @@ func (a *App) GetLauncherVersionCheck() (LauncherVersionCheck, error) {
 	}
 
 	latestRelease := releases[0]
-	latest := trimVersion(latestRelease.TagName)
+	latest := TrimVersion(latestRelease.TagName)
 
-	var downloadURL, signatureURL string
-	for _, asset := range latestRelease.Assets {
+	downloadURL, signatureURL := PickLauncherAssets(latestRelease.Assets)
+
+	return LauncherVersionCheck{
+		CurrentVersion:  current,
+		LatestVersion:   latest,
+		UpdateAvailable: current == "" || CompareVersions(latest, current) > 0,
+		DownloadURL:     downloadURL,
+		SignatureURL:    signatureURL,
+	}, nil
+}
+
+// PickLauncherAssets picks the launcher executable and its detached signature
+// out of a release's assets.
+//
+// The ".exe.sig" case is matched first and the two are never allowed to
+// collapse into one another: mistaking the signature file for the executable
+// (or the reverse) wouldn't fail loudly, it would silently verify an artifact
+// against itself and hand a bogus "update" to installLauncherUpdate. Returning
+// an empty downloadURL or signatureURL instead makes UpdateLauncher refuse the
+// release, which is the outcome an incomplete release should have.
+func PickLauncherAssets(assets []ReleaseAsset) (downloadURL, signatureURL string) {
+	for _, asset := range assets {
 		switch {
 		case strings.HasSuffix(asset.Name, ".exe.sig"):
 			signatureURL = asset.BrowserDownloadURL
@@ -92,14 +137,7 @@ func (a *App) GetLauncherVersionCheck() (LauncherVersionCheck, error) {
 			downloadURL = asset.BrowserDownloadURL
 		}
 	}
-
-	return LauncherVersionCheck{
-		CurrentVersion:  current,
-		LatestVersion:   latest,
-		UpdateAvailable: current == "" || compareVersions(latest, current) > 0,
-		DownloadURL:     downloadURL,
-		SignatureURL:    signatureURL,
-	}, nil
+	return downloadURL, signatureURL
 }
 
 const launcherUpdateProgressEvent = "launcher:update-progress"
@@ -110,19 +148,19 @@ type launcherUpdateProgress struct {
 	Percent int    `json:"percent"`
 }
 
-// updateApplyFlag, when passed as os.Args[1] (see main.go), switches this
+// UpdateApplyFlag, when passed as os.Args[1] (see main.go), switches this
 // binary into a small headless "apply update" mode instead of starting the
-// GUI: see applyLauncherUpdate. This is how the self-update installs itself
+// GUI: see ApplyLauncherUpdate. This is how the self-update installs itself
 // without any .bat/cmd.exe helper — the freshly downloaded build briefly
 // runs itself in this mode to wait out the old process's exit, move itself
 // into the install location, and hand off to the newly-installed exe.
-const updateApplyFlag = "--lethalmon-update-apply"
+const UpdateApplyFlag = "--lethalmon-update-apply"
 
 // UpdateLauncher downloads the latest launcher build and installs it in
 // place of the currently running executable, then relaunches and quits this
 // process. The actual file swap happens inside the freshly downloaded build
 // itself, briefly running headlessly (see installLauncherUpdate and
-// applyLauncherUpdate) because the OS keeps the running executable locked —
+// ApplyLauncherUpdate) because the OS keeps the running executable locked —
 // it can only be replaced once this process has exited.
 func (a *App) UpdateLauncher() error {
 	check, err := a.GetLauncherVersionCheck()
@@ -163,7 +201,7 @@ func (a *App) UpdateLauncher() error {
 		return err
 	}
 
-	if err := verifyLauncherUpdateSignature(check.SignatureURL, tmpData); err != nil {
+	if err := VerifyLauncherUpdateSignature(check.SignatureURL, tmpData); err != nil {
 		os.Remove(tmpPath)
 		return err
 	}
@@ -185,10 +223,10 @@ func (a *App) UpdateLauncher() error {
 // downloadLauncherUpdate downloads downloadURL into the file at destPath,
 // emitting a launcherUpdateProgressEvent after every chunk read so the
 // frontend can render a progress bar during the download stage. See
-// downloadFile (app_download.go) for the retry/resume/idle-timeout behavior,
+// DownloadFile (app_download.go) for the retry/resume/idle-timeout behavior,
 // shared with the game's own downloader.
 func (a *App) downloadLauncherUpdate(downloadURL, destPath string) error {
-	return downloadFile(downloadURL, destPath, func(percent int) {
+	return DownloadFile(downloadURL, destPath, func(percent int) {
 		wailsruntime.EventsEmit(a.ctx, launcherUpdateProgressEvent, launcherUpdateProgress{
 			Stage:   "downloading",
 			Percent: percent,

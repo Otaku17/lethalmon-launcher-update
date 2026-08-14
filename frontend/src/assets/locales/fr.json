@@ -18,6 +18,7 @@
     "description": "Choisissez le dossier dans lequel installer le jeu.",
     "placeholder": "Aucun dossier sélectionné",
     "browse": "Parcourir",
+    "folderPickerTitle": "Choisir le dossier d'installation",
     "cancel": "Annuler",
     "confirm": "Confirmer",
     "downloading": "TÉLÉCHARGEMENT",

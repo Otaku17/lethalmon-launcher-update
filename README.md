@@ -65,7 +65,7 @@ limited to a small, fixed set of destinations:
   online player count.
 
 Every downloaded launcher update is verified against an ed25519 signature
-before being applied (see `app_launcher_update.go` and
+before being applied (see `backend/app_launcher_update.go` and
 `internal/updatekey`), and the update itself is installed by having the
 newly downloaded build briefly relaunch itself to move its own binary into
 place — no shell scripts, no `cmd.exe`, no third-party installer involved.
@@ -73,28 +73,45 @@ place — no shell scripts, no `cmd.exe`, no third-party installer involved.
 ## Project structure
 
 ```
-app*.go                    Backend, split by feature area:
-  app.go                     App struct / Wails startup
-  app_config.go               Launcher's own persisted settings
-  app_download.go             Game download + zip extraction
-  app_game.go                  Install detection, launch, process tracking
-  app_gameopts.go               Game's .gameopts read/write
-  app_gpu_*.go                   GPU detection / per-app GPU preference (Windows-only)
-  app_install.go                  Move/uninstall the game install
-  app_launcher_update*.go          Self-update check, download, verify, apply
-  app_vcredist_*.go                 VC++ Redistributable auto-install (Windows-only)
-  app_exec_*.go                      OS-specific process helpers
-releases.go                 GitHub Releases API client (shared by game + launcher update checks)
+main.go                     Wails window setup and startup; the only Go file at the root
+backend/                    Everything the launcher actually does (package backend):
+  app.go                      App struct / Wails startup
+  app_config.go                Launcher's own persisted settings
+  app_download.go              Game download + zip extraction
+  app_game.go                   Install detection, launch, process tracking
+  app_gameopts.go                Game's .gameopts read/write
+  app_gpu_*.go                    GPU detection / per-app GPU preference (Windows-only)
+  app_install.go                   Move/uninstall the game install
+  app_launcher_update*.go           Self-update check, download, verify, apply
+  app_vcredist_*.go                  VC++ Redistributable auto-install (Windows-only)
+  app_exec_*.go                       OS-specific process helpers
+  authenticode_windows.go       WinVerifyTrust signature check (used by app_vcredist_*)
+  releases.go                   GitHub Releases API client (game + launcher update checks)
+  version.go                    The launcher's own version, injected by main.go
+tests/                      Test suite (package tests), run by `go test ./...` — see Testing
 internal/updatekey/         Public half of the ed25519 update-signing keypair
 tools/updatesign/           Standalone CLI to generate the keypair and sign release artifacts
 frontend/                   React/TypeScript UI (Vite), calls the Go backend via
-                             the generated bindings in frontend/wailsjs/
+                             the generated bindings in frontend/wailsjs/go/backend/
 ```
 
 Files suffixed `_windows.go` / `_other.go` are Go build-tag pairs: the
 Windows-only implementation and its no-op stub for other platforms (the
 launcher currently targets Windows, but the backend stays cross-platform
 where it costs nothing to).
+
+`main.go` stays deliberately thin — open a window, bind `backend.App`, hand
+over. Two things have to live there rather than in `backend/`, both because
+`//go:embed` can only reach files inside the declaring file's own directory:
+the frontend bundle (`frontend/dist`) and `frontend/package.json`, which is
+where the launcher's version number comes from. `main.go` parses the latter
+and passes it in via `backend.SetLauncherVersion`.
+
+Because the tests live in their own package, they only see what `backend`
+exports. That is why functions like `SafeExtractPath`, `VerifyUpdateSignature`
+and `CompareVersions` are exported even though Wails doesn't bind them: they
+are internal to the launcher, but reachable so they can be tested. Only
+`App`'s methods are the actual frontend-facing API.
 
 ## Prerequisites
 
@@ -118,6 +135,7 @@ backend on `http://localhost:34115`, so browser devtools can inspect the
 UI and call bound Go methods directly from the console.
 
 **Local state**, useful to know when testing install/reset flows:
+
 - Launcher settings: `%AppData%\LethalmonLauncher\config.json`
 - Default game install location: `%UserProfile%\LethalmonLauncher\Game`
 
@@ -125,7 +143,30 @@ Deleting the config file resets the launcher to a first-run state (no
 custom install dir, no legacy-install detection override) without
 touching an actual game install.
 
-**Testing the self-update flow** without the production signing key: run
+## Testing
+
+```
+go test ./...
+```
+
+Run it on Windows: several tests in `tests/` are behind a `windows` build
+tag and are the ones most worth having — the Authenticode check against a real
+Microsoft-signed system binary, the self-update file swap, and the
+PowerShell process filter's quoting. On another OS they're skipped
+silently and the suite still passes, which is exactly the false green a
+Windows-only launcher can't afford.
+
+What the suite covers, roughly in order of how much it would hurt to get
+wrong: ed25519 update-signature verification (a forged, tampered,
+truncated or foreign-key artifact must be refused), Authenticode
+verification of the VC++ Redistributable, zip-slip rejection during
+extraction and repair, the download resume/retry/stall logic against a
+`httptest` server that drops connections mid-transfer, the self-update
+file swap, version comparison, `.gameopts` parsing, and config
+persistence. Tests that need network use `httptest` — the suite never
+touches GitHub.
+
+**Testing the self-update flow** end-to-end without the production signing key: run
 `go run ./tools/updatesign -gen` in a scratch directory, swap the
 generated public key into `internal/updatekey/updatekey.go` (don't commit
 this), sign a locally built exe with the matching private key, and serve
@@ -166,12 +207,18 @@ to review:
 
 - Keep platform-specific code behind the existing `_windows.go` /
   `_other.go` split rather than runtime `if runtime.GOOS == ...` checks.
-- `go vet ./...` and a `wails build` should both pass before opening a PR
-  (the `build.yml` workflow checks this automatically).
+- New backend code goes in `backend/`, not at the root; `main.go` should
+  stay limited to wiring up Wails. A helper only needs exporting if a test
+  in `tests/` has to reach it.
+- `go vet ./...`, `go test ./...` and a `wails build` should all pass
+  before opening a PR (the `build.yml` workflow checks this
+  automatically, on Windows).
 - If a change touches the self-update or install flow, explain in the PR
   description what it changes about the launcher's on-disk/network
   behavior — see [How it works](#how-it-works) for what's expected to stay
-  true.
+  true. Changes to signature verification, zip extraction or the update
+  file swap should come with a test: those paths fail silently in
+  production, and a player only finds out once the launcher won't start.
 
 ## License
 

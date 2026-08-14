@@ -1,4 +1,4 @@
-package main
+package backend
 
 import (
 	"bufio"
@@ -9,28 +9,28 @@ import (
 	"strings"
 )
 
-const gameOptsFileName = ".gameopts"
+const GameOptsFileName = ".gameopts"
 
-// defaultGameOpts are injected for any key missing from the current
+// DefaultGameOpts are injected for any key missing from the current
 // .gameopts file (e.g. right after a fresh install, which only ships with
 // --lang set) — same defaults as the launcher's own Settings page.
-var defaultGameOpts = map[string]string{
+var DefaultGameOpts = map[string]string{
 	"lang":          "fr",
 	"master_volume": "50",
 	"auto_save":     "false",
 	"scale":         "2",
 }
 
-// gameOptsPath returns the full path to the game's .gameopts file inside
+// GameOptsPath returns the full path to the game's .gameopts file inside
 // installDir.
-func gameOptsPath(installDir string) string {
-	return filepath.Join(installDir, gameOptsFileName)
+func GameOptsPath(installDir string) string {
+	return filepath.Join(installDir, GameOptsFileName)
 }
 
-// readGameOpts parses the .gameopts file into a key->value map (without the
+// ReadGameOpts parses the .gameopts file into a key->value map (without the
 // leading "--"). A missing file returns an empty map, not an error.
-func readGameOpts(installDir string) (map[string]string, error) {
-	data, err := os.ReadFile(gameOptsPath(installDir))
+func ReadGameOpts(installDir string) (map[string]string, error) {
+	data, err := os.ReadFile(GameOptsPath(installDir))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return map[string]string{}, nil
@@ -62,9 +62,9 @@ func readGameOpts(installDir string) (map[string]string, error) {
 	return opts, nil
 }
 
-// writeGameOpts persists opts to the .gameopts file, one "--key=value" per
+// WriteGameOpts persists opts to the .gameopts file, one "--key=value" per
 // line (sorted by key for stable, diff-friendly output).
-func writeGameOpts(installDir string, opts map[string]string) error {
+func WriteGameOpts(installDir string, opts map[string]string) error {
 	keys := make([]string, 0, len(opts))
 	for k := range opts {
 		keys = append(keys, k)
@@ -76,20 +76,20 @@ func writeGameOpts(installDir string, opts map[string]string) error {
 		sb.WriteString(fmt.Sprintf("--%s=%s\n", k, opts[k]))
 	}
 
-	return os.WriteFile(gameOptsPath(installDir), []byte(sb.String()), 0o644)
+	return os.WriteFile(GameOptsPath(installDir), []byte(sb.String()), 0o644)
 }
 
-// ensureGameOptsDefaults injects any default key missing from the current
+// EnsureGameOptsDefaults injects any default key missing from the current
 // .gameopts (e.g. a fresh install only ships with --lang set), without
 // touching keys that are already present.
-func ensureGameOptsDefaults(installDir string) error {
-	opts, err := readGameOpts(installDir)
+func EnsureGameOptsDefaults(installDir string) error {
+	opts, err := ReadGameOpts(installDir)
 	if err != nil {
 		return err
 	}
 
 	changed := false
-	for key, value := range defaultGameOpts {
+	for key, value := range DefaultGameOpts {
 		if _, exists := opts[key]; !exists {
 			opts[key] = value
 			changed = true
@@ -100,7 +100,7 @@ func ensureGameOptsDefaults(installDir string) error {
 		return nil
 	}
 
-	return writeGameOpts(installDir, opts)
+	return WriteGameOpts(installDir, opts)
 }
 
 // GetGameOpts returns the game's current options (from .gameopts), backing
@@ -113,11 +113,11 @@ func (a *App) GetGameOpts() (map[string]string, error) {
 		return nil, err
 	}
 
-	if err := ensureGameOptsDefaults(installDir); err != nil {
+	if err := EnsureGameOptsDefaults(installDir); err != nil {
 		return nil, err
 	}
 
-	return readGameOpts(installDir)
+	return ReadGameOpts(installDir)
 }
 
 // SetGameOpt updates a single game option in .gameopts, leaving every other
@@ -128,19 +128,19 @@ func (a *App) SetGameOpt(key, value string) error {
 		return err
 	}
 
-	opts, err := readGameOpts(installDir)
+	opts, err := ReadGameOpts(installDir)
 	if err != nil {
 		return err
 	}
 
 	opts[key] = value
 
-	return writeGameOpts(installDir, opts)
+	return WriteGameOpts(installDir, opts)
 }
 
 // ResetGameOptsDefaults resets every known game option back to its default
-// value (see defaultGameOpts), overwriting whatever is currently set —
-// unlike ensureGameOptsDefaults, which only backfills missing keys. Returns
+// value (see DefaultGameOpts), overwriting whatever is currently set —
+// unlike EnsureGameOptsDefaults, which only backfills missing keys. Returns
 // the full options map afterwards so the frontend can refresh its fields.
 func (a *App) ResetGameOptsDefaults() (map[string]string, error) {
 	installDir, err := a.GetInstallDir()
@@ -148,16 +148,16 @@ func (a *App) ResetGameOptsDefaults() (map[string]string, error) {
 		return nil, err
 	}
 
-	opts, err := readGameOpts(installDir)
+	opts, err := ReadGameOpts(installDir)
 	if err != nil {
 		return nil, err
 	}
 
-	for key, value := range defaultGameOpts {
+	for key, value := range DefaultGameOpts {
 		opts[key] = value
 	}
 
-	if err := writeGameOpts(installDir, opts); err != nil {
+	if err := WriteGameOpts(installDir, opts); err != nil {
 		return nil, err
 	}
 

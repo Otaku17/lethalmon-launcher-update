@@ -1,4 +1,4 @@
-package main
+package backend
 
 import (
 	"encoding/json"
@@ -6,16 +6,16 @@ import (
 	"path/filepath"
 )
 
-// appConfig is the launcher's own persisted settings, stored as JSON at the
-// path returned by configFilePath — distinct from the game's own .gameopts
+// Config is the launcher's own persisted settings, stored as JSON at the
+// path returned by ConfigFilePath — distinct from the game's own .gameopts
 // file (see app_gameopts.go).
-type appConfig struct {
+type Config struct {
 	InstallDir string `json:"installDir"`
 }
 
-// configFilePath returns where the launcher's config file lives, creating
+// ConfigFilePath returns where the launcher's config file lives, creating
 // its parent directory if needed.
-func configFilePath() (string, error) {
+func ConfigFilePath() (string, error) {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
@@ -29,30 +29,30 @@ func configFilePath() (string, error) {
 	return filepath.Join(dir, "config.json"), nil
 }
 
-// loadConfig reads the persisted launcher config, returning a zero-value
+// LoadConfig reads the persisted launcher config, returning a zero-value
 // config (not an error) if none exists yet.
-func loadConfig() appConfig {
-	path, err := configFilePath()
+func LoadConfig() Config {
+	path, err := ConfigFilePath()
 	if err != nil {
-		return appConfig{}
+		return Config{}
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return appConfig{}
+		return Config{}
 	}
 
-	var cfg appConfig
+	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return appConfig{}
+		return Config{}
 	}
 
 	return cfg
 }
 
-// saveConfig persists cfg to disk as JSON, overwriting any previous config.
-func saveConfig(cfg appConfig) error {
-	path, err := configFilePath()
+// SaveConfig persists cfg to disk as JSON, overwriting any previous config.
+func SaveConfig(cfg Config) error {
+	path, err := ConfigFilePath()
 	if err != nil {
 		return err
 	}

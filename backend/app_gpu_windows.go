@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package backend
 
 import (
 	"os/exec"
@@ -36,23 +36,30 @@ func (a *App) GetGPUs() ([]string, error) {
 		}
 	}
 
-	// Both a discrete GPU and its motherboard/CPU's integrated one show up
-	// here (the PCI-bus filter above only excludes virtual adapters, not
-	// integrated ones) — put the most likely discrete card first, since
-	// callers use gpus[0] as "the" detected GPU.
-	sort.SliceStable(gpus, func(i, j int) bool {
-		return gpuPriority(gpus[i]) > gpuPriority(gpus[j])
-	})
+	SortGPUsByLikelyDiscrete(gpus)
 
 	return gpus, nil
 }
 
-// gpuPriority ranks a GPU name by how likely it is to be a discrete card
+// SortGPUsByLikelyDiscrete puts the most likely discrete card first. Both a
+// discrete GPU and its motherboard/CPU's integrated one show up in the list
+// (the PCI-bus filter in GetGPUs only excludes virtual adapters, not
+// integrated ones), and callers use gpus[0] as "the" detected GPU.
+//
+// The sort is stable so adapters the heuristic can't tell apart keep the order
+// Windows reported them in, instead of shuffling between calls.
+func SortGPUsByLikelyDiscrete(gpus []string) {
+	sort.SliceStable(gpus, func(i, j int) bool {
+		return GPUPriority(gpus[i]) > GPUPriority(gpus[j])
+	})
+}
+
+// GPUPriority ranks a GPU name by how likely it is to be a discrete card
 // rather than an integrated one, since Win32_VideoController doesn't
 // distinguish the two. NVIDIA doesn't make integrated GPUs for consumer
 // AMD/Intel platforms, so any "NVIDIA" name ranks above generic
 // "AMD Radeon(TM) Graphics" (APU) / "Intel(R) ... Graphics" (iGPU) names.
-func gpuPriority(name string) int {
+func GPUPriority(name string) int {
 	upper := strings.ToUpper(name)
 
 	switch {

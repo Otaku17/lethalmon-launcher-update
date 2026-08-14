@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package backend
 
 import (
 	"fmt"
@@ -43,11 +43,11 @@ func runElevated(exePath string, args ...string) error {
 	return cmd.Run()
 }
 
-// gameProcessFilter builds a PowerShell Where-Object expression matching
+// GameProcessFilter builds a PowerShell Where-Object expression matching
 // processes by image name AND install directory (via ExecutablePath), so a
 // same-named process running elsewhere on the machine (e.g. an unrelated
 // ruby.exe) isn't mistaken for the game.
-func gameProcessFilter(names []string, installDir string) string {
+func GameProcessFilter(names []string, installDir string) string {
 	quotedNames := make([]string, len(names))
 	for i, n := range names {
 		quotedNames[i] = "'" + strings.ReplaceAll(n, "'", "''") + "'"
@@ -68,7 +68,7 @@ func anyProcessRunning(names []string, installDir string) (bool, error) {
 	}
 
 	cmd := exec.Command("powershell", "-NoProfile", "-Command",
-		gameProcessFilter(names, installDir)+" | Select-Object -ExpandProperty ProcessId")
+		GameProcessFilter(names, installDir)+" | Select-Object -ExpandProperty ProcessId")
 	hideWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {
@@ -86,7 +86,7 @@ func killProcesses(names []string, installDir string) error {
 	}
 
 	cmd := exec.Command("powershell", "-NoProfile", "-Command",
-		gameProcessFilter(names, installDir)+" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }")
+		GameProcessFilter(names, installDir)+" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }")
 	hideWindow(cmd)
 	return cmd.Run()
 }

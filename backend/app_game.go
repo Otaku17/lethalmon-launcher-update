@@ -1,4 +1,4 @@
-package main
+package backend
 
 import (
 	"errors"
@@ -16,11 +16,11 @@ import (
 // install and to target the right process for GPU preference forcing.
 const gameExeName = "Lethalmon.exe"
 
-// gameProcessNames lists every process image name that can end up running
+// GameProcessNames lists every process image name that can end up running
 // the game: Lethalmon.exe is a small stub that spawns the Ruby runtime
 // (ruby.exe/rubyw.exe) and then exits itself, so tracking only the stub
 // would report the game as closed while it's actually still running.
-var gameProcessNames = []string{gameExeName, "ruby.exe", "rubyw.exe"}
+var GameProcessNames = []string{gameExeName, "ruby.exe", "rubyw.exe"}
 
 // gameExitedEvent is emitted once none of the game's processes are running
 // anymore, whether the user closed the game or it was killed via StopGame.
@@ -48,15 +48,15 @@ func legacyInstallDir() (string, error) {
 // clearing it from the config, rather than leaving the launcher permanently
 // broken until someone manually edits/deletes config.json.
 func (a *App) GetInstallDir() (string, error) {
-	if cfg := loadConfig(); cfg.InstallDir != "" {
+	if cfg := LoadConfig(); cfg.InstallDir != "" {
 		if info, statErr := os.Stat(cfg.InstallDir); statErr == nil && !info.IsDir() {
 			cfg.InstallDir = ""
-			saveConfig(cfg)
+			SaveConfig(cfg)
 		} else if err := os.MkdirAll(cfg.InstallDir, 0o755); err == nil {
 			return cfg.InstallDir, nil
 		} else {
 			cfg.InstallDir = ""
-			saveConfig(cfg)
+			SaveConfig(cfg)
 		}
 	}
 
@@ -85,9 +85,9 @@ func (a *App) GetInstallDir() (string, error) {
 // custom path, so recovering no longer requires editing or deleting
 // config.json by hand.
 func (a *App) ResetInstallPath() (string, error) {
-	cfg := loadConfig()
+	cfg := LoadConfig()
 	cfg.InstallDir = ""
-	if err := saveConfig(cfg); err != nil {
+	if err := SaveConfig(cfg); err != nil {
 		return "", err
 	}
 	return a.GetInstallDir()
@@ -132,7 +132,7 @@ func (a *App) LaunchGame() error {
 		wailsruntime.EventsEmit(a.ctx, vcRedistProgressEvent, vcRedistProgress{Stage: "failed", Error: err.Error()})
 	}
 
-	if err := stampLauncherEdition(installDir); err != nil {
+	if err := StampLauncherEdition(installDir); err != nil {
 		return err
 	}
 
@@ -154,7 +154,7 @@ func (a *App) watchGameExit(installDir string) {
 	time.Sleep(1500 * time.Millisecond)
 
 	for {
-		running, err := anyProcessRunning(gameProcessNames, installDir)
+		running, err := anyProcessRunning(GameProcessNames, installDir)
 		if err != nil || !running {
 			break
 		}
@@ -170,7 +170,7 @@ func (a *App) StopGame() error {
 	if err != nil {
 		return err
 	}
-	return killProcesses(gameProcessNames, installDir)
+	return killProcesses(GameProcessNames, installDir)
 }
 
 // IsGameRunning reports whether any game process is currently running.
@@ -179,7 +179,7 @@ func (a *App) IsGameRunning() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return anyProcessRunning(gameProcessNames, installDir)
+	return anyProcessRunning(GameProcessNames, installDir)
 }
 
 // OpenInstallFolder opens the game's install directory in the OS file explorer.
@@ -202,15 +202,15 @@ func (a *App) OpenInstallFolder() error {
 	return cmd.Start()
 }
 
-// errOneDrivePath is returned by SelectInstallFolder when the user picks a
+// ErrOneDrivePath is returned by SelectInstallFolder when the user picks a
 // folder synced by OneDrive. The frontend matches on this exact message to
 // show a translated, user-friendly explanation instead of a raw Go error.
-var errOneDrivePath = errors.New("onedrive_path_not_allowed")
+var ErrOneDrivePath = errors.New("onedrive_path_not_allowed")
 
-// isOneDrivePath reports whether path lives inside a OneDrive-synced folder.
+// IsOneDrivePath reports whether path lives inside a OneDrive-synced folder.
 // OneDrive locks/renames files mid-sync and can silently break the game's
 // save files and updater, so installing there is not supported.
-func isOneDrivePath(path string) bool {
+func IsOneDrivePath(path string) bool {
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		abs = path
@@ -245,16 +245,31 @@ func isOneDrivePath(path string) bool {
 	return false
 }
 
+// folderPickerFallbackTitle stands in when the frontend passes an empty
+// title to SelectInstallFolder. It's in English to match i18n's fallbackLng,
+// and exists only so a missing translation key degrades to a readable dialog
+// instead of an untitled one.
+const folderPickerFallbackTitle = "Choose the installation folder"
+
 // SelectInstallFolder opens a native folder picker so the user can choose
 // where to install the game, defaulting to the current install directory.
-func (a *App) SelectInstallFolder() (string, error) {
+//
+// The title is supplied by the frontend rather than defined here: this dialog
+// is the one piece of launcher UI drawn by the OS instead of by React, so a
+// string hardcoded in Go would stay stuck in one language while the rest of
+// the interface follows the user's choice.
+func (a *App) SelectInstallFolder(title string) (string, error) {
 	defaultDir, err := a.GetInstallDir()
 	if err != nil {
 		return "", err
 	}
 
+	if strings.TrimSpace(title) == "" {
+		title = folderPickerFallbackTitle
+	}
+
 	selected, err := wailsruntime.OpenDirectoryDialog(a.ctx, wailsruntime.OpenDialogOptions{
-		Title:            "Choisir le dossier d'installation",
+		Title:            title,
 		DefaultDirectory: defaultDir,
 	})
 	if err != nil {
@@ -264,33 +279,33 @@ func (a *App) SelectInstallFolder() (string, error) {
 		return "", nil
 	}
 
-	if isOneDrivePath(selected) {
-		return "", errOneDrivePath
+	if IsOneDrivePath(selected) {
+		return "", ErrOneDrivePath
 	}
 
 	return selected, nil
 }
 
-// launcherEditionGameOptKey is the .gameopts key stamped on every launch to
+// LauncherEditionGameOptKey is the .gameopts key stamped on every launch to
 // mark the install as started by this (Wails-based) launcher. The previous
 // Electron-based launcher never wrote this key, so the game can read its
 // presence (via PARGV.game_opt in Ruby, which re-reads .gameopts from disk
 // on every call) to distinguish "launched by the new launcher" from a
 // legacy-launcher or manual launch — e.g. to gate a launcher-exclusive
 // Mystery Gift.
-const launcherEditionGameOptKey = "launcher_edition"
+const LauncherEditionGameOptKey = "launcher_edition"
 
-// stampLauncherEdition writes "true" into .gameopts under
-// launcherEditionGameOptKey, unconditionally overwriting any previous value.
-// Unlike ensureGameOptsDefaults, this isn't a user preference to preserve —
+// StampLauncherEdition writes "true" into .gameopts under
+// LauncherEditionGameOptKey, unconditionally overwriting any previous value.
+// Unlike EnsureGameOptsDefaults, this isn't a user preference to preserve —
 // it must always reflect which launcher actually started the game this time.
-func stampLauncherEdition(installDir string) error {
-	opts, err := readGameOpts(installDir)
+func StampLauncherEdition(installDir string) error {
+	opts, err := ReadGameOpts(installDir)
 	if err != nil {
 		return err
 	}
 
-	opts[launcherEditionGameOptKey] = "true"
+	opts[LauncherEditionGameOptKey] = "true"
 
-	return writeGameOpts(installDir, opts)
+	return WriteGameOpts(installDir, opts)
 }
