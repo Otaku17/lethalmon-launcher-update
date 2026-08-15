@@ -9,6 +9,7 @@ import './LauncherUpdateButton.css';
 import { UpdateLauncher } from '../../../wailsjs/go/backend/App';
 import { EventsOn } from '../../../wailsjs/runtime/runtime';
 import { useAppStatus } from '../../lib/appStatus';
+import { errorMessage } from '../../lib/errors';
 
 const AUTO_UPDATE_KEY = 'lethalmon.autoUpdate';
 const NOTICE_DURATION_MS = 5000;
@@ -80,7 +81,7 @@ export default function LauncherUpdateButton() {
       // Success: the process closes itself on the Go side (see
       // wailsruntime.Quit in UpdateLauncher) then relaunches up to date.
     } catch (err) {
-      setState({ phase: 'error', message: String(err) });
+      setState({ phase: 'error', message: errorMessage(err) });
     }
   }
 

@@ -34,6 +34,7 @@ import ThemedImage from '../components/hud/ThemedImage';
 import GameVersionText from '../components/hud/GameVersionText';
 import EasterEggRunner from '../components/hud/EasterEggRunner';
 import { useAppStatus } from '../lib/appStatus';
+import { errorMessage } from '../lib/errors';
 
 const MULTI_INSTANCE_KEY = 'lethalmon.multiInstance';
 const EASTER_EGG_CLICKS = 7;
@@ -107,7 +108,7 @@ function HomePage() {
       // the game at all until they install wine, as opposed to a transient
       // failure that's better left silent like the rest of this handler
       // treats errors.
-      if (String(err) === 'wine_not_found') setShowWineModal(true);
+      if (errorMessage(err) === 'wine_not_found') setShowWineModal(true);
     }
   }
 
@@ -147,7 +148,7 @@ function HomePage() {
       setInstallPath(await GetInstallDir());
       refresh();
     } catch (err) {
-      setDownloadError(String(err));
+      setDownloadError(errorMessage(err));
     } finally {
       const elapsed = Date.now() - startedAt;
       if (elapsed < MIN_VISIBLE_MS) {
