@@ -90,3 +90,13 @@ func killProcesses(names []string, installDir string) error {
 	hideWindow(cmd)
 	return cmd.Run()
 }
+
+// newGameCommand builds the command used to launch the game's executable.
+func newGameCommand(exePath, installDir string) (*exec.Cmd, error) {
+	cmd := exec.Command(exePath)
+	cmd.Dir = installDir
+	return cmd, nil
+}
+
+// wineAvailable: not applicable on Windows, the game runs natively here.
+func wineAvailable() bool { return true }

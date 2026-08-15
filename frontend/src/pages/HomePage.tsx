@@ -8,7 +8,15 @@ import Modal from '../components/hud/Modal';
 import Button from '../components/hud/Button';
 import Progress from '../components/hud/Progress';
 import ContextMenu from '../components/hud/ContextMenu';
-import { FaArrowDownShortWide, FaArrowRotateRight, FaFolderOpen, FaPlay, FaStop, FaWifi } from 'react-icons/fa6';
+import {
+  FaArrowDownShortWide,
+  FaArrowRotateRight,
+  FaFolderOpen,
+  FaPlay,
+  FaStop,
+  FaTriangleExclamation,
+  FaWifi,
+} from 'react-icons/fa6';
 import PathInput from '../components/hud/PathInput';
 import {
   GetInstallDir,
@@ -18,6 +26,7 @@ import {
   LaunchGame,
   StopGame,
   IsGameRunning,
+  IsWineAvailable,
   OpenInstallFolder,
 } from '../../wailsjs/go/backend/App';
 import { EventsOn } from '../../wailsjs/runtime/runtime';
@@ -52,6 +61,7 @@ function HomePage() {
   const [installPathError, setInstallPathError] = useState<string | null>(null);
   const [showKillConfirm, setShowKillConfirm] = useState(false);
   const [vcRedistProgress, setVcRedistProgress] = useState<VCRedistProgress | null>(null);
+  const [wineAvailable, setWineAvailable] = useState(true);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const logoClicks = useRef(0);
   const lastLogoClickAt = useRef(0);
@@ -75,10 +85,27 @@ function HomePage() {
     });
   }, []);
 
+  useEffect(() => {
+    // Only meaningful on Linux (the game only ships a Windows build, run
+    // there through wine) — IsWineAvailable always resolves true elsewhere.
+    if (!installed) return;
+    IsWineAvailable()
+      .then(setWineAvailable)
+      .catch(() => setWineAvailable(true));
+  }, [installed]);
+
   async function handleLaunch() {
     setVcRedistProgress(null);
-    await LaunchGame().catch(() => {});
-    if (!multiInstance) setRunning(true);
+    try {
+      await LaunchGame();
+      if (!multiInstance) setRunning(true);
+    } catch (err) {
+      // wine_not_found is the one launch failure worth surfacing: it means
+      // the player can't run the game at all until they install wine, as
+      // opposed to a transient failure that's better left silent like the
+      // rest of this handler treats errors.
+      if (String(err) === 'wine_not_found') setWineAvailable(false);
+    }
   }
 
   async function handleStop() {
@@ -176,6 +203,12 @@ function HomePage() {
       </div>
       <RotatingTagline />
       <div className="home-actions">
+        {installed && !wineAvailable && (
+          <div className="home-wine-notice">
+            <FaTriangleExclamation />
+            <span>{t('home.wine.missing')}</span>
+          </div>
+        )}
         {installed && updateAvailable && (
           <Button variant="warn" icon={<FaArrowRotateRight />} onClick={handleUpdateClick}>
             {t('actions.update')}

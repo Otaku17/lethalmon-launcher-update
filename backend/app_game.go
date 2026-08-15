@@ -136,8 +136,10 @@ func (a *App) LaunchGame() error {
 		return err
 	}
 
-	cmd := exec.Command(exePath)
-	cmd.Dir = installDir
+	cmd, err := newGameCommand(exePath, installDir)
+	if err != nil {
+		return err
+	}
 	if err := cmd.Start(); err != nil {
 		return err
 	}
@@ -145,6 +147,14 @@ func (a *App) LaunchGame() error {
 	go a.watchGameExit(installDir)
 
 	return nil
+}
+
+// IsWineAvailable reports whether the game can actually be launched on this
+// platform. Always true on Windows/macOS (see wineAvailable in
+// app_exec_windows.go / app_exec_other.go); on Linux it reflects whether
+// wine is installed and on PATH, since the game only ships a Windows build.
+func (a *App) IsWineAvailable() (bool, error) {
+	return wineAvailable(), nil
 }
 
 // watchGameExit polls until none of the game's processes are running

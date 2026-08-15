@@ -60,6 +60,9 @@
       "downloading": "DOWNLOAD DEI COMPONENTI RICHIESTI",
       "installing": "INSTALLAZIONE DEI COMPONENTI RICHIESTI",
       "failed": "Installazione dei componenti richiesti (Visual C++) non riuscita: {{error}}. Se è comparsa una finestra di conferma di Windows, accettala per consentire l'installazione, poi riavvia il gioco. Puoi anche installarli manualmente da https://aka.ms/vs/17/release/vc_redist.x64.exe."
+    },
+    "wine": {
+      "missing": "Wine è necessario per avviare il gioco su Linux (il gioco è disponibile solo in versione Windows). Installalo tramite il gestore pacchetti della tua distribuzione — ad esempio \"sudo apt install wine\" su Debian/Ubuntu, \"sudo dnf install wine\" su Fedora, oppure \"sudo pacman -S wine\" su Arch — poi riavvia il gioco."
     }
   },
   "changelog": {

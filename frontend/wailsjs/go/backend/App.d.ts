@@ -26,6 +26,8 @@ export function GetLauncherVersionCheck():Promise<backend.LauncherVersionCheck>;
 
 export function IsGameRunning():Promise<boolean>;
 
+export function IsWineAvailable():Promise<boolean>;
+
 export function LaunchGame():Promise<void>;
 
 export function MoveInstallDir(arg1:string):Promise<void>;

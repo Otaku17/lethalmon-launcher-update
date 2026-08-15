@@ -60,6 +60,9 @@
       "downloading": "DOWNLOADING REQUIRED COMPONENTS",
       "installing": "INSTALLING REQUIRED COMPONENTS",
       "failed": "Installing the required components (Visual C++) failed: {{error}}. If a Windows confirmation prompt appeared, accept it to allow the install, then relaunch the game. You can also install it manually from https://aka.ms/vs/17/release/vc_redist.x64.exe."
+    },
+    "wine": {
+      "missing": "Wine is required to run the game on Linux (the game itself only ships a Windows build). Install it via your package manager — for example \"sudo apt install wine\" on Debian/Ubuntu, \"sudo dnf install wine\" on Fedora, or \"sudo pacman -S wine\" on Arch — then launch the game again."
     }
   },
   "changelog": {
