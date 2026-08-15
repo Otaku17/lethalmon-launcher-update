@@ -36,8 +36,12 @@ fetch_tool() {
 
 fetch_tool linuxdeploy \
 	"https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
-fetch_tool linuxdeploy-plugin-gtk \
-	"https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/releases/download/continuous/linuxdeploy-plugin-gtk-x86_64.AppImage"
+# Unlike linuxdeploy itself, this plugin isn't published as a compiled
+# AppImage release asset — it's a plain bash script fetched straight from
+# the repo (see its README), and linuxdeploy's plugin lookup expects it
+# under this exact "linuxdeploy-plugin-<name>.sh" name on PATH.
+fetch_tool linuxdeploy-plugin-gtk.sh \
+	"https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh"
 fetch_tool appimagetool \
 	"https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
 
