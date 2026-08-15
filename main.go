@@ -25,6 +25,15 @@ var assets embed.FS
 //go:embed frontend/package.json
 var frontendPackageJSON []byte
 
+// linuxIcon is the window/taskbar icon on Linux (linux.Options.Icon below).
+// Windows and macOS get their icon baked in automatically by the Wails CLI
+// from build/windows/icon.ico and build/darwin's assets, but Linux has no
+// such per-platform build step — the PNG has to be embedded and handed to
+// Wails explicitly, or the window falls back to a generic icon.
+//
+//go:embed build/appicon.png
+var linuxIcon []byte
+
 // main configures and starts the Wails window, binding backend.App's exported
 // methods so the frontend can call them directly (see wailsjs/go/backend/App).
 //
@@ -72,6 +81,7 @@ func main() {
 		// canvas backgrounds (see ParticleBackground.tsx, ThemedImage.tsx),
 		// all of which push WebKitGTK down the buggy GPU path if allowed.
 		Linux: &linux.Options{
+			Icon:             linuxIcon,
 			WebviewGpuPolicy: linux.WebviewGpuPolicyNever,
 		},
 		Windows: &windows.Options{

@@ -47,3 +47,60 @@ jobs:
         with:
           name: lethalmon-launcher-windows
           path: build/bin/*.exe
+
+  # Builds and packages the Linux target as an AppImage, bundling GTK3 and
+  # WebKit2GTK (via linuxdeploy) so it runs on any distro without those
+  # needing to be preinstalled — the game itself still requires the player to
+  # install Wine separately (see the "wine required" flow in HomePage.tsx),
+  # but that's a per-game runtime choice, not something this build step can
+  # bundle the way it can for its own GTK/WebKit dependency.
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Vet Go sources
+        run: go vet ./...
+
+      # -tags webkit2_41 targets webkit2gtk-4.1 (what current distros ship;
+      # Wails defaults to the older 4.0 dev package, which isn't installed
+      # above and wouldn't be found).
+      - name: Build
+        run: wails build -tags webkit2_41 -platform linux/amd64 -clean -nopackage
+
+      - name: Package as AppImage
+        run: ./tools/build-appimage.sh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lethalmon-launcher-linux
+          path: build/bin/*.AppImage

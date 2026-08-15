@@ -149,18 +149,39 @@ func (a *App) LaunchGame() error {
 	return nil
 }
 
+// gameStartupGrace bounds how long watchGameExit waits for one of
+// GameProcessNames to first appear, so a launch that genuinely fails (crash,
+// missing dependency) doesn't leave the launcher reporting the game as
+// running forever. It's generous mainly for Linux's sake: a wine prefix
+// that's never been used before bootstraps itself (wineboot, first-run
+// device setup) before the game's actual process starts, which can take
+// well over the couple of seconds a native Windows launch needs — long
+// enough that a short, fixed delay mistook that bootstrap time for "the game
+// already closed" and made the Stop button disappear a few seconds into the
+// very first launch after installing wine.
+const gameStartupGrace = 60 * time.Second
+
 // watchGameExit polls until none of the game's processes are running
-// anymore, then notifies the frontend. A short initial delay lets the stub
-// executable finish spawning the real Ruby runtime process.
+// anymore, then notifies the frontend. It doesn't report the game as exited
+// just because none of GameProcessNames has shown up yet — only once one of
+// them has been seen running (the normal case), or gameStartupGrace has
+// passed without that ever happening (the launch failed outright).
 func (a *App) watchGameExit(installDir string) {
-	time.Sleep(1500 * time.Millisecond)
+	started := false
+	deadline := time.Now().Add(gameStartupGrace)
 
 	for {
+		time.Sleep(1500 * time.Millisecond)
+
 		running, err := anyProcessRunning(GameProcessNames, installDir)
-		if err != nil || !running {
+		if err != nil {
 			break
 		}
-		time.Sleep(2 * time.Second)
+		if running {
+			started = true
+		} else if started || time.Now().After(deadline) {
+			break
+		}
 	}
 
 	wailsruntime.EventsEmit(a.ctx, gameExitedEvent)

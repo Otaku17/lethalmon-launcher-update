@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Lethalmon Launcher
+Comment=Launcher for the Lethalmon fangame
+Exec=lethalmon-launcher
+Icon=lethalmon-launcher
+Categories=Game;
+Terminal=false
+StartupNotify=true

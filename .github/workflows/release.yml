@@ -1,13 +1,20 @@
 name: Release
 
-# Builds the launcher from a tag, signs it with the ed25519 update key, and
-# attaches both the exe and its signature to the GitHub release.
+# Builds the launcher from a tag for both Windows (.exe) and Linux
+# (.AppImage), signs the Windows build with the ed25519 update key, and
+# attaches everything to the GitHub release.
 #
 # Signing used to be a manual step run from a developer's machine, which
 # made it possible to forget. It can't be forgotten any more: installed
 # launchers refuse to apply an update that has no valid ".sig" companion
 # (see app_launcher_update.go), so producing the signature has to be part
-# of the same automation that publishes the exe.
+# of the same automation that publishes the exe. Self-update isn't
+# implemented for Linux yet (see app_launcher_update_apply_other.go), so the
+# AppImage ships unsigned — it's a manual download from the release page,
+# not something an installed launcher fetches and applies itself.
+#
+# A tag with a "-suffix" (v1.11.0-beta, 1.11.0-rc1, ...) publishes as a
+# draft pre-release instead of a public one — see the prepare job below.
 #
 # Required repository secret:
 #   LAUNCHER_UPDATE_PRIVATE_KEY — contents of launcher_update_private.key
@@ -18,16 +25,83 @@ name: Release
 on:
   push:
     tags:
-      # Both tag styles the repo has used so far ("v1.0.4" and "1.0.3").
+      # Both tag styles the repo has used so far ("v1.0.4" and "1.0.3"), plus
+      # a "-suffix" for draft pre-releases ("v1.11.0-beta").
       - "v*"
       - "[0-9]*"
 
-# Needed to attach the built artifacts to the release.
+# Needed to create the release and attach the built artifacts to it.
 permissions:
   contents: write
 
 jobs:
-  release:
+  # Validates the tag, then creates the GitHub release (or reuses one
+  # already drafted from the GitHub UI) exactly once, before either build
+  # job uploads to it — running that step in both release-windows and
+  # release-linux directly would race them against each other trying to
+  # create the same release.
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.version.outputs.prerelease }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The launcher reads its own version from frontend/package.json (see
+      # version.go), while the update check compares it against the latest
+      # release tag. If the two disagree, an updated launcher still reports
+      # the old version and keeps offering the very update it just
+      # installed — an update loop players can't get out of. Cheaper to
+      # fail the release here. Only the "MAJOR.MINOR.PATCH" core is compared
+      # for a pre-release tag ("1.11.0-beta" -> "1.11.0"): package.json
+      # itself never carries a pre-release suffix.
+      - name: Check the tag matches frontend/package.json
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          core_version="${version%%-*}"
+          pkg_version="$(jq -r .version frontend/package.json)"
+          if [ "$core_version" != "$pkg_version" ]; then
+            echo "Tag '$GITHUB_REF_NAME' is version '$core_version' but frontend/package.json says '$pkg_version'. Bump package.json to match the tag before releasing." >&2
+            exit 1
+          fi
+          if [ "$version" != "$core_version" ]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Releasing version $version"
+
+      - name: Create the GitHub release if it doesn't exist yet
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Pushing a bare tag doesn't create a release; publishing one from
+          # the GitHub UI does. Handle both so the artifacts land either way
+          # (release-windows/release-linux only ever upload to whatever
+          # release ends up existing here).
+          if gh release view "$GITHUB_REF_NAME" --json tagName >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists — reusing it."
+            exit 0
+          fi
+
+          args=(--title "$GITHUB_REF_NAME" --generate-notes)
+          if [ "${{ steps.version.outputs.prerelease }}" = "true" ]; then
+            # This repo is public, so a plain "pre-release" flag alone
+            # wouldn't hide anything from anyone — only a draft does: drafts
+            # are only visible to people with write access to the repo, and
+            # the launcher's own changelog/update-check (fetchReleases in
+            # releases.go) can't see them either, since it queries the
+            # GitHub API unauthenticated.
+            args+=(--draft --prerelease)
+            echo "Tag has a pre-release suffix — creating a draft pre-release (hidden from the public until manually published)."
+          fi
+          gh release create "$GITHUB_REF_NAME" "${args[@]}"
+
+  release-windows:
+    needs: prepare
     runs-on: windows-latest
 
     steps:
@@ -43,23 +117,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-
-      # The launcher reads its own version from frontend/package.json (see
-      # version.go), while the update check compares it against the latest
-      # release tag. If the two disagree, an updated launcher still reports
-      # the old version and keeps offering the very update it just
-      # installed — an update loop players can't get out of. Cheaper to
-      # fail the release here.
-      - name: Check the tag matches frontend/package.json
-        id: version
-        run: |
-          $version = "${{ github.ref_name }}" -replace '^v', ''
-          $pkgVersion = (Get-Content frontend/package.json -Raw | ConvertFrom-Json).version
-          if ($pkgVersion -ne $version) {
-            throw "Tag '${{ github.ref_name }}' is version '$version' but frontend/package.json says '$pkgVersion'. Bump package.json to match the tag before releasing."
-          }
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Host "Releasing version $version"
 
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
@@ -117,19 +174,65 @@ jobs:
           go run ./tools/updatesign -verify "${{ steps.artifact.outputs.path }}"
           if ($LASTEXITCODE -ne 0) { throw "signature verification failed with exit code $LASTEXITCODE" }
 
-      - name: Publish to the release
+      - name: Upload to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "${{ github.ref_name }}"
           $artifact = "${{ steps.artifact.outputs.path }}"
-          # Pushing a bare tag doesn't create a release; publishing one from
-          # the GitHub UI does. Handle both so the artifacts land either way.
-          gh release view $tag --json tagName | Out-Null
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "No release exists for $tag yet — creating one."
-            gh release create $tag --title $tag --generate-notes
-            if ($LASTEXITCODE -ne 0) { throw "gh release create failed with exit code $LASTEXITCODE" }
-          }
           gh release upload $tag $artifact "$artifact.sig" --clobber
           if ($LASTEXITCODE -ne 0) { throw "gh release upload failed with exit code $LASTEXITCODE" }
+
+  release-linux:
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Vet Go sources
+        run: go vet ./...
+
+      # -tags webkit2_41 targets webkit2gtk-4.1 (what current distros ship;
+      # Wails defaults to the older 4.0 dev package, which isn't installed
+      # above and wouldn't be found).
+      - name: Build
+        run: wails build -tags webkit2_41 -platform linux/amd64 -clean -nopackage
+
+      # Produces build/bin/lethalmon-launcher-x86_64.AppImage — no version in
+      # the name, matching the Windows exe's own stable download URL.
+      - name: Package as AppImage
+        run: ./tools/build-appimage.sh
+
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" build/bin/lethalmon-launcher-x86_64.AppImage --clobber
