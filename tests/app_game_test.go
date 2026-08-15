@@ -87,3 +87,41 @@ func TestErrOneDrivePathMessage(t *testing.T) {
 		t.Errorf("backend.ErrOneDrivePath = %q, want %q — the frontend matches on this exact value", got, "onedrive_path_not_allowed")
 	}
 }
+
+// TestResolveInstallDirAppendsSubfolder covers the actual incident this
+// function exists to prevent: a player picked a folder that already had
+// other files in it as the install location, and uninstalling wiped every
+// one of them along with the game, because nothing kept the game's files
+// isolated from whatever else was already there.
+func TestResolveInstallDirAppendsSubfolder(t *testing.T) {
+	base := filepath.Join("D:", "Games")
+	want := filepath.Join(base, backend.GameInstallSubfolder)
+
+	if got := backend.ResolveInstallDir(base); got != want {
+		t.Errorf("backend.ResolveInstallDir(%q) = %q, want %q", base, got, want)
+	}
+}
+
+// TestResolveInstallDirIsIdempotent covers why the "already ends with the
+// subfolder" guard exists: SelectInstallFolder's dialog defaults to the
+// current install directory, which already has the subfolder appended once
+// this has run — re-selecting it unchanged must not nest a second copy of it.
+func TestResolveInstallDirIsIdempotent(t *testing.T) {
+	already := filepath.Join("D:", "Games", backend.GameInstallSubfolder)
+
+	if got := backend.ResolveInstallDir(already); got != already {
+		t.Errorf("backend.ResolveInstallDir(%q) = %q, want it unchanged", already, got)
+	}
+}
+
+// TestResolveInstallDirCleansPath covers a trailing separator from the OS
+// folder picker ("D:\Games\") — without Clean, filepath.Base would return ""
+// instead of "Games", and the idempotency check above would never fire.
+func TestResolveInstallDirCleansPath(t *testing.T) {
+	base := filepath.Join("D:", "Games") + string(filepath.Separator)
+	want := filepath.Join("D:", "Games", backend.GameInstallSubfolder)
+
+	if got := backend.ResolveInstallDir(base); got != want {
+		t.Errorf("backend.ResolveInstallDir(%q) = %q, want %q", base, got, want)
+	}
+}

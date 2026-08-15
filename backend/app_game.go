@@ -268,6 +268,29 @@ func IsOneDrivePath(path string) bool {
 	return false
 }
 
+// GameInstallSubfolder is appended to whatever folder the player picks via
+// SelectInstallFolder, so the game's files always live in a directory this
+// launcher owns exclusively — never bare inside a folder the player might
+// also be keeping unrelated files in. UninstallGame only ever deletes inside
+// this subfolder: a player who picked, say, a folder full of personal files
+// as the "install location" lost every one of them the moment they
+// uninstalled, because that wiped the entire folder they'd chosen instead of
+// just the game's own files.
+const GameInstallSubfolder = "lethalmon_game"
+
+// ResolveInstallDir appends GameInstallSubfolder to base, unless base
+// already ends with it. That guard matters because SelectInstallFolder's
+// dialog defaults to the current install directory — which, once this has
+// applied once, already has the subfolder appended — so re-selecting it
+// unchanged must not double-nest into ".../lethalmon_game/lethalmon_game".
+func ResolveInstallDir(base string) string {
+	base = filepath.Clean(base)
+	if filepath.Base(base) == GameInstallSubfolder {
+		return base
+	}
+	return filepath.Join(base, GameInstallSubfolder)
+}
+
 // folderPickerFallbackTitle stands in when the frontend passes an empty
 // title to SelectInstallFolder. It's in English to match i18n's fallbackLng,
 // and exists only so a missing translation key degrades to a readable dialog
@@ -306,7 +329,7 @@ func (a *App) SelectInstallFolder(title string) (string, error) {
 		return "", ErrOneDrivePath
 	}
 
-	return selected, nil
+	return ResolveInstallDir(selected), nil
 }
 
 // LauncherEditionGameOptKey is the .gameopts key stamped on every launch to
