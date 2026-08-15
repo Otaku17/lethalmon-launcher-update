@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/github/license/Otaku17/lethalmon-launcher-update" alt="License">
 </p>
 
-This repository is the source for the desktop launcher only — the app
+This repository is the source for the desktop launcher only  the app
 players install to download, update, configure, and start the game. It's
 fully open source (MIT) so anyone can audit exactly what it does: no
 closed-source binary is shipped without a matching commit to build it
@@ -40,7 +40,7 @@ own releases here for self-updates.
 - Graphics card detection, with an option to force the dedicated GPU on
   dual-GPU setups (via Windows' per-app graphics preference).
 - Self-updating, with cryptographic (ed25519) signature verification of
-  update artifacts before install — an update is refused outright if it
+  update artifacts before install  an update is refused outright if it
   isn't signed with the key shipped in the launcher.
 - Built-in changelog (pulled from GitHub releases), a live online player
   count (via a WebSocket connection to the game's presence server), a
@@ -50,25 +50,25 @@ own releases here for self-updates.
 ## How it works
 
 The launcher is a [Wails v2](https://wails.io) desktop app (Go backend,
-React/TypeScript frontend) — not a browser wrapper. Network access is
+React/TypeScript frontend)  not a browser wrapper. Network access is
 limited to a small, fixed set of destinations:
 
-- **GitHub Releases** (`api.github.com`, `github.com`) — fetches the game's
+- **GitHub Releases** (`api.github.com`, `github.com`)  fetches the game's
   and launcher's release lists/changelogs, and downloads game/launcher
   update artifacts as plain `.zip`/`.exe` assets attached to public
   releases.
-- **`aka.ms`** — Microsoft's own permanent redirect used to fetch the
+- **`aka.ms`**  Microsoft's own permanent redirect used to fetch the
   official Visual C++ Redistributable installer when it's missing; the
   downloaded installer's Authenticode signature is verified (must be
   validly signed by "Microsoft Corporation") before it's ever executed.
-- **`api.lethalmon-fangame.com`** — a WebSocket connection for the live
+- **`api.lethalmon-fangame.com`**  a WebSocket connection for the live
   online player count.
 
 Every downloaded launcher update is verified against an ed25519 signature
 before being applied (see `backend/app_launcher_update.go` and
 `internal/updatekey`), and the update itself is installed by having the
 newly downloaded build briefly relaunch itself to move its own binary into
-place — no shell scripts, no `cmd.exe`, no third-party installer involved.
+place  no shell scripts, no `cmd.exe`, no third-party installer involved.
 
 ## Project structure
 
@@ -88,7 +88,7 @@ backend/                    Everything the launcher actually does (package backe
   authenticode_windows.go       WinVerifyTrust signature check (used by app_vcredist_*)
   releases.go                   GitHub Releases API client (game + launcher update checks)
   version.go                    The launcher's own version, injected by main.go
-tests/                      Test suite (package tests), run by `go test ./...` — see Testing
+tests/                      Test suite (package tests), run by `go test ./...`  see Testing
 internal/updatekey/         Public half of the ed25519 update-signing keypair
 tools/updatesign/           Standalone CLI to generate the keypair and sign release artifacts
 frontend/                   React/TypeScript UI (Vite), calls the Go backend via
@@ -100,7 +100,7 @@ Windows-only implementation and its no-op stub for other platforms (the
 launcher currently targets Windows, but the backend stays cross-platform
 where it costs nothing to).
 
-`main.go` stays deliberately thin — open a window, bind `backend.App`, hand
+`main.go` stays deliberately thin  open a window, bind `backend.App`, hand
 over. Two things have to live there rather than in `backend/`, both because
 `//go:embed` can only reach files inside the declaring file's own directory:
 the frontend bundle (`frontend/dist`) and `frontend/package.json`, which is
@@ -128,7 +128,7 @@ cd lethalmon-launcher-update
 wails dev
 ```
 
-No separate `npm install` step needed — Wails runs `frontend:install` (see
+No separate `npm install` step needed  Wails runs `frontend:install` (see
 `wails.json`) for you before the first launch. `wails dev` then runs the
 app with hot reload on the frontend (Vite dev server) and exposes the Go
 backend on `http://localhost:34115`, so browser devtools can inspect the
@@ -150,7 +150,7 @@ go test ./...
 ```
 
 Run it on Windows: several tests in `tests/` are behind a `windows` build
-tag and are the ones most worth having — the Authenticode check against a real
+tag and are the ones most worth having  the Authenticode check against a real
 Microsoft-signed system binary, the self-update file swap, and the
 PowerShell process filter's quoting. On another OS they're skipped
 silently and the suite still passes, which is exactly the false green a
@@ -163,7 +163,7 @@ verification of the VC++ Redistributable, zip-slip rejection during
 extraction and repair, the download resume/retry/stall logic against a
 `httptest` server that drops connections mid-transfer, the self-update
 file swap, version comparison, `.gameopts` parsing, and config
-persistence. Tests that need network use `httptest` — the suite never
+persistence. Tests that need network use `httptest`  the suite never
 touches GitHub.
 
 **Testing the self-update flow** end-to-end without the production signing key: run
@@ -183,22 +183,22 @@ wails build
 
 Produces a production build in `build/bin/Lethal Launcher.exe` (per
 `wails.json`'s `outputfilename`). Published releases rename this to
-`lethalmon-launcher.exe` — see `release.yml` — so the download URL never
+`lethalmon-launcher.exe`  see `release.yml`  so the download URL never
 changes between versions; a local build keeps the spaced name.
 
 ## CI/CD
 
-- **`.github/workflows/build.yml`** — on every push/PR to `main`: installs
+- **`.github/workflows/build.yml`**  on every push/PR to `main`: installs
   dependencies, builds the frontend, runs `go vet`, builds the app, and
   uploads the resulting `.exe` as a workflow artifact. This is the fastest
   way to confirm a change builds cleanly without installing anything
   locally.
-- **`.github/workflows/release.yml`** — on pushing a version tag (`v1.2.3`
+- **`.github/workflows/release.yml`**  on pushing a version tag (`v1.2.3`
   or `1.2.3`): builds the launcher, signs it with the ed25519 update key
   (`tools/updatesign`), verifies the signature it just produced, and
   publishes the `.exe` and its `.sig` to a GitHub release. The tag must
   match the version in `frontend/package.json`, or the release fails
-  before anything is published — see the workflow's comments for why.
+  before anything is published  see the workflow's comments for why.
 
 ## Contributing
 
@@ -215,7 +215,7 @@ to review:
   automatically, on Windows).
 - If a change touches the self-update or install flow, explain in the PR
   description what it changes about the launcher's on-disk/network
-  behavior — see [How it works](#how-it-works) for what's expected to stay
+  behavior  see [How it works](#how-it-works) for what's expected to stay
   true. Changes to signature verification, zip extraction or the update
   file swap should come with a test: those paths fail silently in
   production, and a player only finds out once the launcher won't start.
