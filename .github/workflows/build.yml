@@ -97,7 +97,7 @@ jobs:
         run: wails build -tags webkit2_41 -platform linux/amd64 -clean -nopackage
 
       - name: Package as AppImage
-        run: ./tools/build-appimage.sh
+        run: bash tools/build-appimage.sh
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

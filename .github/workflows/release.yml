@@ -229,7 +229,7 @@ jobs:
       # Produces build/bin/lethalmon-launcher-x86_64.AppImage — no version in
       # the name, matching the Windows exe's own stable download URL.
       - name: Package as AppImage
-        run: ./tools/build-appimage.sh
+        run: bash tools/build-appimage.sh
 
       - name: Upload to the release
         env:
