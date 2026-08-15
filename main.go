@@ -61,7 +61,19 @@ func main() {
 		Bind: []interface{}{
 			app,
 		},
-		Linux: &linux.Options{},
+		// WebviewGpuPolicyNever forces WebKitGTK's software renderer. Wails
+		// defaults to this on Linux specifically to work around
+		// https://github.com/wailsapp/wails/issues/2977 (GPU-accelerated
+		// compositing there is prone to stale/ghosted frames) — but only
+		// when options.Linux is left nil. Passing a non-nil Options struct
+		// (needed below for other settings) opts back out of that
+		// protection unless set explicitly, so it's spelled out here. This
+		// UI leans on mix-blend-mode, filter: drop-shadow and animated
+		// canvas backgrounds (see ParticleBackground.tsx, ThemedImage.tsx),
+		// all of which push WebKitGTK down the buggy GPU path if allowed.
+		Linux: &linux.Options{
+			WebviewGpuPolicy: linux.WebviewGpuPolicyNever,
+		},
 		Windows: &windows.Options{
 			DisableWindowIcon:    false,
 			WebviewIsTransparent: false,
