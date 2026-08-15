@@ -97,6 +97,3 @@ func newGameCommand(exePath, installDir string) (*exec.Cmd, error) {
 	cmd.Dir = installDir
 	return cmd, nil
 }
-
-// wineAvailable: not applicable on Windows, the game runs natively here.
-func wineAvailable() bool { return true }

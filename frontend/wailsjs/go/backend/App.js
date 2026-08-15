@@ -50,10 +50,6 @@ export function IsGameRunning() {
   return window['go']['backend']['App']['IsGameRunning']();
 }
 
-export function IsWineAvailable() {
-  return window['go']['backend']['App']['IsWineAvailable']();
-}
-
 export function LaunchGame() {
   return window['go']['backend']['App']['LaunchGame']();
 }

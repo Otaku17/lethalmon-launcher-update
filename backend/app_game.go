@@ -149,14 +149,6 @@ func (a *App) LaunchGame() error {
 	return nil
 }
 
-// IsWineAvailable reports whether the game can actually be launched on this
-// platform. Always true on Windows/macOS (see wineAvailable in
-// app_exec_windows.go / app_exec_other.go); on Linux it reflects whether
-// wine is installed and on PATH, since the game only ships a Windows build.
-func (a *App) IsWineAvailable() (bool, error) {
-	return wineAvailable(), nil
-}
-
 // watchGameExit polls until none of the game's processes are running
 // anymore, then notifies the frontend. A short initial delay lets the stub
 // executable finish spawning the real Ruby runtime process.

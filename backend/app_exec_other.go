@@ -21,6 +21,3 @@ func newGameCommand(exePath, installDir string) (*exec.Cmd, error) {
 	cmd.Dir = installDir
 	return cmd, nil
 }
-
-// wineAvailable: not applicable outside Linux (see app_exec_linux.go).
-func wineAvailable() bool { return true }

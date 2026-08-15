@@ -62,7 +62,17 @@
       "failed": "Installazione dei componenti richiesti (Visual C++) non riuscita: {{error}}. Se è comparsa una finestra di conferma di Windows, accettala per consentire l'installazione, poi riavvia il gioco. Puoi anche installarli manualmente da https://aka.ms/vs/17/release/vc_redist.x64.exe."
     },
     "wine": {
-      "missing": "Wine è necessario per avviare il gioco su Linux (il gioco è disponibile solo in versione Windows). Installalo tramite il gestore pacchetti della tua distribuzione — ad esempio \"sudo apt install wine\" su Debian/Ubuntu, \"sudo dnf install wine\" su Fedora, oppure \"sudo pacman -S wine\" su Arch — poi riavvia il gioco."
+      "modalEyebrow": "// AVVIO_BLOCCATO",
+      "modalTitle": "Wine è necessario",
+      "modalIntro": "Il gioco è disponibile solo in versione Windows. Per avviarlo su Linux, installa Wine tramite il gestore pacchetti della tua distribuzione:",
+      "modalOutro": "Una volta installato, riavvia il gioco.",
+      "debian": "Debian / Ubuntu",
+      "fedora": "Fedora",
+      "arch": "Arch Linux",
+      "copy": "Copia comando",
+      "copied": "Copiato!",
+      "otherDistro": "Non trovi la tua distribuzione?",
+      "otherDistroLink": "Scarica Wine dal sito ufficiale"
     }
   },
   "changelog": {

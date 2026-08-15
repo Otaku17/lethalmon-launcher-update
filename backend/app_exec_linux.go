@@ -54,12 +54,6 @@ func newGameCommand(exePath, installDir string) (*exec.Cmd, error) {
 	return cmd, nil
 }
 
-// wineAvailable reports whether wine is installed and on PATH.
-func wineAvailable() bool {
-	_, err := exec.LookPath("wine")
-	return err == nil
-}
-
 // commPIDs returns the PIDs of every running process whose kernel-reported
 // name (/proc/<pid>/comm) matches one of names, case-insensitively. Wine
 // preserves the original Windows executable's name here — running
