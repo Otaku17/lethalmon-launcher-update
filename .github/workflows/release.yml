@@ -1,17 +1,14 @@
 name: Release
 
 # Builds the launcher from a tag for both Windows (.exe) and Linux
-# (.AppImage), signs the Windows build with the ed25519 update key, and
-# attaches everything to the GitHub release.
+# (.AppImage), signs both with the ed25519 update key, and attaches
+# everything to the GitHub release.
 #
 # Signing used to be a manual step run from a developer's machine, which
 # made it possible to forget. It can't be forgotten any more: installed
 # launchers refuse to apply an update that has no valid ".sig" companion
 # (see app_launcher_update.go), so producing the signature has to be part
-# of the same automation that publishes the exe. Self-update isn't
-# implemented for Linux yet (see app_launcher_update_apply_other.go), so the
-# AppImage ships unsigned — it's a manual download from the release page,
-# not something an installed launcher fetches and applies itself.
+# of the same automation that publishes the build.
 #
 # A tag with a "-suffix" (v1.11.0-beta, 1.11.0-rc1, ...) publishes as a
 # draft pre-release instead of a public one — see the prepare job below.
@@ -231,8 +228,34 @@ jobs:
       - name: Package as AppImage
         run: bash tools/build-appimage.sh
 
+      # Signed with the same key as the Windows exe (see the top-of-file
+      # comment) so installLauncherUpdate on Linux can verify it the same
+      # way — see app_launcher_update_linux.go.
+      - name: Sign the launcher
+        env:
+          LAUNCHER_UPDATE_PRIVATE_KEY: ${{ secrets.LAUNCHER_UPDATE_PRIVATE_KEY }}
+        run: |
+          if [ -z "$LAUNCHER_UPDATE_PRIVATE_KEY" ]; then
+            echo "The LAUNCHER_UPDATE_PRIVATE_KEY secret is not set. Without it the release would ship an unsigned AppImage that no installed launcher accepts as an update." >&2
+            exit 1
+          fi
+          # Written outside the workspace so no later step can pick it up as
+          # a build artifact, and removed as soon as signing is done.
+          key_path="$RUNNER_TEMP/launcher_update_private.key"
+          trap 'rm -f "$key_path"' EXIT
+          printf '%s' "$LAUNCHER_UPDATE_PRIVATE_KEY" > "$key_path"
+          go run ./tools/updatesign -sign build/bin/lethalmon-launcher-x86_64.AppImage -key "$key_path"
+
+      # Runs the same check an installed launcher runs before applying an
+      # update, against the exact file about to be uploaded.
+      - name: Verify the signature
+        run: go run ./tools/updatesign -verify build/bin/lethalmon-launcher-x86_64.AppImage
+
       - name: Upload to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "$GITHUB_REF_NAME" build/bin/lethalmon-launcher-x86_64.AppImage --clobber
+          gh release upload "$GITHUB_REF_NAME" \
+            build/bin/lethalmon-launcher-x86_64.AppImage \
+            build/bin/lethalmon-launcher-x86_64.AppImage.sig \
+            --clobber

@@ -1,11 +1,11 @@
-//go:build !windows
+//go:build !windows && !linux
 
 package backend
 
 import "fmt"
 
-// installLauncherUpdate: self-update is only implemented for Windows (the
-// launcher only ships a Windows build for now).
+// installLauncherUpdate: self-update isn't implemented on this platform (see
+// app_launcher_update_windows.go / _linux.go for the two that do).
 func installLauncherUpdate(newExePath string) error {
-	return fmt.Errorf("launcher self-update is only supported on Windows")
+	return fmt.Errorf("launcher self-update is not supported on this platform")
 }

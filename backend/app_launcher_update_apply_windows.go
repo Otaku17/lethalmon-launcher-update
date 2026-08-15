@@ -36,22 +36,3 @@ func ApplyLauncherUpdate(targetExePath string) {
 	cmd := exec.Command(targetExePath)
 	_ = cmd.Start()
 }
-
-// ReplaceExecutable moves src onto dst. os.Rename alone would fail across
-// drives (e.g. a %TEMP% download landing on a different volume than the
-// install directory), so it falls back to a copy + remove in that case.
-func ReplaceExecutable(src, dst string) error {
-	if err := os.Rename(src, dst); err == nil {
-		return nil
-	}
-
-	data, err := os.ReadFile(src)
-	if err != nil {
-		return err
-	}
-	if err := os.WriteFile(dst, data, 0o755); err != nil {
-		return err
-	}
-	os.Remove(src)
-	return nil
-}

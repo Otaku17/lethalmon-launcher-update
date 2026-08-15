@@ -164,15 +164,21 @@ func TestVerifyLauncherUpdateSignatureUsesEmbeddedKey(t *testing.T) {
 	}
 }
 
-func TestPickLauncherAssets(t *testing.T) {
+// TestPickLauncherAssetsForSuffix covers the matching logic directly against
+// an explicit suffix, so both platforms' behavior (".exe" on Windows,
+// ".AppImage" on Linux — see launcherAssetSuffix) is exercised regardless of
+// which platform actually runs the test suite (CI only runs Windows).
+func TestPickLauncherAssetsForSuffix(t *testing.T) {
 	cases := []struct {
 		name       string
+		suffix     string
 		assets     []backend.ReleaseAsset
 		wantDL     string
 		wantSigURL string
 	}{
 		{
-			name: "a complete release",
+			name:   "a complete Windows release",
+			suffix: ".exe",
 			assets: []backend.ReleaseAsset{
 				{Name: "lethalmon-launcher.exe", BrowserDownloadURL: "https://example.test/l.exe"},
 				{Name: "lethalmon-launcher.exe.sig", BrowserDownloadURL: "https://example.test/l.exe.sig"},
@@ -181,9 +187,24 @@ func TestPickLauncherAssets(t *testing.T) {
 			wantSigURL: "https://example.test/l.exe.sig",
 		},
 		{
+			name:   "a complete Linux release",
+			suffix: ".AppImage",
+			assets: []backend.ReleaseAsset{
+				{Name: "lethalmon-launcher-x86_64.AppImage", BrowserDownloadURL: "https://example.test/l.AppImage"},
+				{Name: "lethalmon-launcher-x86_64.AppImage.sig", BrowserDownloadURL: "https://example.test/l.AppImage.sig"},
+				// A Windows exe published on the same release must not be
+				// picked up when matching for Linux, or vice versa.
+				{Name: "lethalmon-launcher.exe", BrowserDownloadURL: "https://example.test/l.exe"},
+				{Name: "lethalmon-launcher.exe.sig", BrowserDownloadURL: "https://example.test/l.exe.sig"},
+			},
+			wantDL:     "https://example.test/l.AppImage",
+			wantSigURL: "https://example.test/l.AppImage.sig",
+		},
+		{
 			// Asset order is GitHub's to decide, so the signature appearing
 			// first must not change the outcome.
-			name: "signature listed first",
+			name:   "signature listed first",
+			suffix: ".exe",
 			assets: []backend.ReleaseAsset{
 				{Name: "lethalmon-launcher.exe.sig", BrowserDownloadURL: "https://example.test/l.exe.sig"},
 				{Name: "lethalmon-launcher.exe", BrowserDownloadURL: "https://example.test/l.exe"},
@@ -194,7 +215,8 @@ func TestPickLauncherAssets(t *testing.T) {
 		{
 			// The ".sig" must never be mistaken for the executable: that
 			// would have UpdateLauncher verify an artifact against itself.
-			name: "signature only",
+			name:   "signature only",
+			suffix: ".exe",
 			assets: []backend.ReleaseAsset{
 				{Name: "lethalmon-launcher.exe.sig", BrowserDownloadURL: "https://example.test/l.exe.sig"},
 			},
@@ -203,7 +225,8 @@ func TestPickLauncherAssets(t *testing.T) {
 		},
 		{
 			// An unsigned release: UpdateLauncher refuses this outright.
-			name: "executable only",
+			name:   "executable only",
+			suffix: ".exe",
 			assets: []backend.ReleaseAsset{
 				{Name: "lethalmon-launcher.exe", BrowserDownloadURL: "https://example.test/l.exe"},
 			},
@@ -211,7 +234,8 @@ func TestPickLauncherAssets(t *testing.T) {
 			wantSigURL: "",
 		},
 		{
-			name: "unrelated assets are ignored",
+			name:   "unrelated assets are ignored",
+			suffix: ".exe",
 			assets: []backend.ReleaseAsset{
 				{Name: "Lethalmon.zip", BrowserDownloadURL: "https://example.test/game.zip"},
 				{Name: "notes.md", BrowserDownloadURL: "https://example.test/notes.md"},
@@ -221,6 +245,7 @@ func TestPickLauncherAssets(t *testing.T) {
 		},
 		{
 			name:       "no assets at all",
+			suffix:     ".exe",
 			assets:     nil,
 			wantDL:     "",
 			wantSigURL: "",
@@ -229,7 +254,7 @@ func TestPickLauncherAssets(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			gotDL, gotSig := backend.PickLauncherAssets(c.assets)
+			gotDL, gotSig := backend.PickLauncherAssetsForSuffix(c.assets, c.suffix)
 			if gotDL != c.wantDL {
 				t.Errorf("downloadURL = %q, want %q", gotDL, c.wantDL)
 			}

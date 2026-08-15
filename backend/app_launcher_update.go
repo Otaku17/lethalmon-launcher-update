@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	goruntime "runtime"
 	"strings"
 	"time"
 
@@ -119,21 +120,39 @@ func (a *App) GetLauncherVersionCheck() (LauncherVersionCheck, error) {
 	}, nil
 }
 
-// PickLauncherAssets picks the launcher executable and its detached signature
-// out of a release's assets.
+// launcherAssetSuffix is the file extension release.yml publishes this
+// platform's launcher build under: ".exe" on Windows, ".AppImage" on Linux —
+// matching whatever installLauncherUpdate on this platform actually knows
+// how to apply (see app_launcher_update_windows.go / _linux.go).
+func launcherAssetSuffix() string {
+	if goruntime.GOOS == "linux" {
+		return ".AppImage"
+	}
+	return ".exe"
+}
+
+// PickLauncherAssets picks this platform's launcher build and its detached
+// signature out of a release's assets (see launcherAssetSuffix).
+func PickLauncherAssets(assets []ReleaseAsset) (downloadURL, signatureURL string) {
+	return PickLauncherAssetsForSuffix(assets, launcherAssetSuffix())
+}
+
+// PickLauncherAssetsForSuffix is PickLauncherAssets with the file extension
+// as a parameter, so both platforms' matching behavior can be covered by
+// tests regardless of which platform actually runs them.
 //
-// The ".exe.sig" case is matched first and the two are never allowed to
+// The "<suffix>.sig" case is matched first and the two are never allowed to
 // collapse into one another: mistaking the signature file for the executable
 // (or the reverse) wouldn't fail loudly, it would silently verify an artifact
 // against itself and hand a bogus "update" to installLauncherUpdate. Returning
 // an empty downloadURL or signatureURL instead makes UpdateLauncher refuse the
 // release, which is the outcome an incomplete release should have.
-func PickLauncherAssets(assets []ReleaseAsset) (downloadURL, signatureURL string) {
+func PickLauncherAssetsForSuffix(assets []ReleaseAsset, suffix string) (downloadURL, signatureURL string) {
 	for _, asset := range assets {
 		switch {
-		case strings.HasSuffix(asset.Name, ".exe.sig"):
+		case strings.HasSuffix(asset.Name, suffix+".sig"):
 			signatureURL = asset.BrowserDownloadURL
-		case strings.HasSuffix(asset.Name, ".exe"):
+		case strings.HasSuffix(asset.Name, suffix):
 			downloadURL = asset.BrowserDownloadURL
 		}
 	}
@@ -183,7 +202,7 @@ func (a *App) UpdateLauncher() error {
 		return fmt.Errorf("launcher update is not signed — refusing to install")
 	}
 
-	tmpFile, err := os.CreateTemp("", "lethalmon-launcher-update-*.exe")
+	tmpFile, err := os.CreateTemp("", "lethalmon-launcher-update-*"+launcherAssetSuffix())
 	if err != nil {
 		return err
 	}
@@ -217,6 +236,31 @@ func (a *App) UpdateLauncher() error {
 	}
 
 	wailsruntime.Quit(a.ctx)
+	return nil
+}
+
+// ReplaceExecutable moves src onto dst. os.Rename alone would fail across
+// drives (e.g. a %TEMP% download landing on a different volume than the
+// install directory), so it falls back to a copy + remove in that case.
+//
+// Shared between app_launcher_update_apply_windows.go (run from a freshly
+// downloaded build, after the old one has actually exited and released its
+// file lock) and app_launcher_update_linux.go (run directly against the
+// still-running process's own executable, which Linux — unlike Windows —
+// allows replacing on disk without waiting for it to exit first).
+func ReplaceExecutable(src, dst string) error {
+	if err := os.Rename(src, dst); err == nil {
+		return nil
+	}
+
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(dst, data, 0o755); err != nil {
+		return err
+	}
+	os.Remove(src)
 	return nil
 }
 
