@@ -92,6 +92,73 @@
   border: 2px solid rgba(255, 184, 77, 0.45);
 }
 
+.wine-modal-commands {
+  list-style: none;
+  margin: 14px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wine-modal-commands__distro {
+  display: block;
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--cyan);
+  margin-bottom: 4px;
+}
+
+.wine-modal-commands__command {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  background: rgba(77, 238, 234, 0.08);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease;
+}
+
+.wine-modal-commands__command:hover {
+  border-color: var(--cyan-soft);
+  background: rgba(77, 238, 234, 0.14);
+}
+
+.wine-modal-commands__command code {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #eaf6f8;
+  word-break: break-all;
+  text-align: left;
+}
+
+.wine-modal-commands__command svg {
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.wine-modal-other {
+  margin-top: 4px;
+}
+
+.wine-modal-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--cyan);
+  cursor: pointer;
+}
+
+.wine-modal-link:hover {
+  text-decoration: underline;
+}
+
 .home-download-error {
   position: absolute;
   right: 40px;

@@ -33,6 +33,7 @@ import {
   StopGame,
 } from '../../wailsjs/go/backend/App';
 import { useAppStatus } from '../lib/appStatus';
+import { errorMessage } from '../lib/errors';
 
 interface MigrationProgress {
   current: number;
@@ -243,7 +244,7 @@ function SettingsPage() {
       setInstallPath(path);
       refreshAppStatus();
     } catch (err) {
-      setInstallPathError(String(err));
+      setInstallPathError(errorMessage(err));
     }
   }
 
@@ -260,7 +261,7 @@ function SettingsPage() {
       setPendingInstallPath(null);
       refreshAppStatus();
     } catch (err) {
-      setMigrationError(String(err));
+      setMigrationError(errorMessage(err));
     } finally {
       const elapsed = Date.now() - startedAt;
       if (elapsed < MIN_VISIBLE_MS) {
@@ -322,7 +323,7 @@ function SettingsPage() {
       await RepairGame();
       refreshAppStatus();
     } catch (err) {
-      setRepairError(String(err));
+      setRepairError(errorMessage(err));
     } finally {
       setRepairing(false);
     }

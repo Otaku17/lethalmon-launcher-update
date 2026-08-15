@@ -2,6 +2,11 @@ build/bin
 node_modules
 frontend/dist
 
+# AppImage packaging tools tools/build-appimage.sh downloads on demand
+# (linuxdeploy, linuxdeploy-plugin-gtk, appimagetool) — fetched fresh by CI
+# every run, not meant to be committed.
+.appimage-tools/
+
 # Separate backend project (distribution server) — not part of the
 # launcher's own public source, kept out of this repo.
 lethalmon_api/

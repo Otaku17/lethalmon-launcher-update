@@ -8,7 +8,16 @@ import Modal from '../components/hud/Modal';
 import Button from '../components/hud/Button';
 import Progress from '../components/hud/Progress';
 import ContextMenu from '../components/hud/ContextMenu';
-import { FaArrowDownShortWide, FaArrowRotateRight, FaFolderOpen, FaPlay, FaStop, FaWifi } from 'react-icons/fa6';
+import {
+  FaArrowDownShortWide,
+  FaArrowRotateRight,
+  FaCheck,
+  FaFolderOpen,
+  FaPlay,
+  FaRegCopy,
+  FaStop,
+  FaWifi,
+} from 'react-icons/fa6';
 import PathInput from '../components/hud/PathInput';
 import {
   GetInstallDir,
@@ -20,15 +29,26 @@ import {
   IsGameRunning,
   OpenInstallFolder,
 } from '../../wailsjs/go/backend/App';
-import { EventsOn } from '../../wailsjs/runtime/runtime';
+import { BrowserOpenURL, ClipboardSetText, EventsOn } from '../../wailsjs/runtime/runtime';
 import ThemedImage from '../components/hud/ThemedImage';
 import GameVersionText from '../components/hud/GameVersionText';
 import EasterEggRunner from '../components/hud/EasterEggRunner';
 import { useAppStatus } from '../lib/appStatus';
+import { errorMessage } from '../lib/errors';
 
 const MULTI_INSTANCE_KEY = 'lethalmon.multiInstance';
 const EASTER_EGG_CLICKS = 7;
 const EASTER_EGG_CLICK_WINDOW_MS = 600;
+
+// Install commands shown in the "wine required" modal: shell commands, so
+// left untranslated, unlike the distro labels next to them.
+const WINE_INSTALL_COMMANDS = [
+  { distroKey: 'debian', command: 'sudo apt install wine' },
+  { distroKey: 'fedora', command: 'sudo dnf install wine' },
+  { distroKey: 'arch', command: 'sudo pacman -S wine' },
+] as const;
+
+const WINE_DOWNLOAD_URL = 'https://www.winehq.org/download';
 
 interface DownloadProgress {
   stage: 'downloading' | 'extracting' | 'done';
@@ -52,6 +72,8 @@ function HomePage() {
   const [installPathError, setInstallPathError] = useState<string | null>(null);
   const [showKillConfirm, setShowKillConfirm] = useState(false);
   const [vcRedistProgress, setVcRedistProgress] = useState<VCRedistProgress | null>(null);
+  const [showWineModal, setShowWineModal] = useState(false);
+  const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const logoClicks = useRef(0);
   const lastLogoClickAt = useRef(0);
@@ -77,13 +99,29 @@ function HomePage() {
 
   async function handleLaunch() {
     setVcRedistProgress(null);
-    await LaunchGame().catch(() => {});
-    if (!multiInstance) setRunning(true);
+    try {
+      await LaunchGame();
+      if (!multiInstance) setRunning(true);
+    } catch (err) {
+      // wine_not_found (Linux only, the game ships a Windows build) is the
+      // one launch failure worth surfacing: it means the player can't run
+      // the game at all until they install wine, as opposed to a transient
+      // failure that's better left silent like the rest of this handler
+      // treats errors.
+      if (errorMessage(err) === 'wine_not_found') setShowWineModal(true);
+    }
   }
 
   async function handleStop() {
     await StopGame().catch(() => {});
     setRunning(false);
+  }
+
+  async function handleCopyCommand(command: string) {
+    const ok = await ClipboardSetText(command).catch(() => false);
+    if (!ok) return;
+    setCopiedCommand(command);
+    setTimeout(() => setCopiedCommand((current) => (current === command ? null : current)), 1500);
   }
 
   async function performDownload() {
@@ -110,7 +148,7 @@ function HomePage() {
       setInstallPath(await GetInstallDir());
       refresh();
     } catch (err) {
-      setDownloadError(String(err));
+      setDownloadError(errorMessage(err));
     } finally {
       const elapsed = Date.now() - startedAt;
       if (elapsed < MIN_VISIBLE_MS) {
@@ -256,6 +294,44 @@ function HomePage() {
           onConfirm={handleConfirmKillAndUpdate}
         >
           <p>{t('home.updateKillConfirmDescription')}</p>
+        </Modal>
+      )}
+
+      {showWineModal && (
+        <Modal
+          variant="close"
+          eyebrow={t('home.wine.modalEyebrow')}
+          title={t('home.wine.modalTitle')}
+          open={showWineModal}
+          onClose={() => setShowWineModal(false)}
+        >
+          <p>{t('home.wine.modalIntro')}</p>
+          <ul className="wine-modal-commands">
+            {WINE_INSTALL_COMMANDS.map(({ distroKey, command }) => {
+              const copied = copiedCommand === command;
+              return (
+                <li key={distroKey}>
+                  <span className="wine-modal-commands__distro">{t(`home.wine.${distroKey}`)}</span>
+                  <button
+                    type="button"
+                    className="wine-modal-commands__command"
+                    onClick={() => handleCopyCommand(command)}
+                    aria-label={t(copied ? 'home.wine.copied' : 'home.wine.copy')}
+                  >
+                    <code>{command}</code>
+                    {copied ? <FaCheck /> : <FaRegCopy />}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="wine-modal-other">
+            {t('home.wine.otherDistro')}{' '}
+            <button type="button" className="wine-modal-link" onClick={() => BrowserOpenURL(WINE_DOWNLOAD_URL)}>
+              {t('home.wine.otherDistroLink')}
+            </button>
+          </p>
+          <p>{t('home.wine.modalOutro')}</p>
         </Modal>
       )}
 

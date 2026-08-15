@@ -10,6 +10,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
 
 //go:embed all:frontend/dist
@@ -23,6 +24,15 @@ var assets embed.FS
 //
 //go:embed frontend/package.json
 var frontendPackageJSON []byte
+
+// linuxIcon is the window/taskbar icon on Linux (linux.Options.Icon below).
+// Windows and macOS get their icon baked in automatically by the Wails CLI
+// from build/windows/icon.ico and build/darwin's assets, but Linux has no
+// such per-platform build step — the PNG has to be embedded and handed to
+// Wails explicitly, or the window falls back to a generic icon.
+//
+//go:embed build/appicon.png
+var linuxIcon []byte
 
 // main configures and starts the Wails window, binding backend.App's exported
 // methods so the frontend can call them directly (see wailsjs/go/backend/App).
@@ -59,6 +69,20 @@ func main() {
 		OnStartup:        app.Startup,
 		Bind: []interface{}{
 			app,
+		},
+		// WebviewGpuPolicyNever forces WebKitGTK's software renderer. Wails
+		// defaults to this on Linux specifically to work around
+		// https://github.com/wailsapp/wails/issues/2977 (GPU-accelerated
+		// compositing there is prone to stale/ghosted frames) — but only
+		// when options.Linux is left nil. Passing a non-nil Options struct
+		// (needed below for other settings) opts back out of that
+		// protection unless set explicitly, so it's spelled out here. This
+		// UI leans on mix-blend-mode, filter: drop-shadow and animated
+		// canvas backgrounds (see ParticleBackground.tsx, ThemedImage.tsx),
+		// all of which push WebKitGTK down the buggy GPU path if allowed.
+		Linux: &linux.Options{
+			Icon:             linuxIcon,
+			WebviewGpuPolicy: linux.WebviewGpuPolicyNever,
 		},
 		Windows: &windows.Options{
 			DisableWindowIcon:    false,

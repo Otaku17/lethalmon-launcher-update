@@ -11,6 +11,14 @@ import (
 // file (see app_gameopts.go).
 type Config struct {
 	InstallDir string `json:"installDir"`
+
+	// ForceDiscreteGpu mirrors the Windows per-app GPU preference (see
+	// gpuPreferenceRegistryKey in app_gpu_windows.go) on Linux, where there's
+	// no equivalent OS-level setting to persist it in. Applied by setting
+	// DRI_PRIME (and its NVIDIA-offload equivalents) on the game process's
+	// environment each time it's launched — see newGameCommand in
+	// app_exec_linux.go.
+	ForceDiscreteGpu bool `json:"forceDiscreteGpu,omitempty"`
 }
 
 // ConfigFilePath returns where the launcher's config file lives, creating
