@@ -1,12 +1,25 @@
 #!/usr/bin/env bash
 # Packages the Linux build already produced by
 # `wails build -platform linux/amd64 -nopackage` (see .github/workflows/
-# build.yml and release.yml) into a self-contained AppImage: GTK3 and
-# WebKit2GTK are bundled in via linuxdeploy + linuxdeploy-plugin-gtk, so the
-# result runs on any distro without those needing to be preinstalled —
-# unlike Wine, which the game still needs the player to install themselves
-# (see the "wine required" flow in HomePage.tsx): that's a per-game runtime
-# choice, not this launcher's own GTK/WebKit dependency.
+# build.yml and release.yml) into an AppImage that links against the
+# system's own GTK3/WebKit2GTK-4.1 stack instead of bundling it.
+#
+# An earlier version of this script bundled that whole stack in via
+# linuxdeploy-plugin-gtk, on the theory that it would let the AppImage run
+# on any distro without those libraries preinstalled. In practice it did the
+# opposite: the bundled GTK/WebKit/Pango/Cairo build gets mixed at runtime
+# with pieces of the *system's* GTK theme/rendering stack (GTK talks to the
+# X/Wayland session and the system's widget theme regardless of which
+# libgtk-3.so.0 loaded it), and that version mismatch is what produced a
+# blank grey window on real installs — confirmed by the fact that forcing
+# `LD_LIBRARY_PATH=/usr/lib` (system libs only, none of the bundled ones)
+# fixed it. So this now excludes the entire GTK/GLib/WebKit dependency graph
+# from bundling: the AppImage requires GTK3 and WebKit2GTK-4.1 to be
+# installed on the host (e.g. `sudo pacman -S gtk3 webkit2gtk-4.1` on Arch,
+# or the -dev packages this same script's CI callers already install), the
+# same way it already requires Wine for the game itself (see the "wine
+# required" flow in HomePage.tsx) — a per-system runtime dependency, not
+# something bundled.
 #
 # Shared between build.yml (every push/PR, as a plain workflow artifact) and
 # release.yml (tagged releases, as a downloadable asset) so the exact same
@@ -36,12 +49,6 @@ fetch_tool() {
 
 fetch_tool linuxdeploy \
 	"https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
-# Unlike linuxdeploy itself, this plugin isn't published as a compiled
-# AppImage release asset — it's a plain bash script fetched straight from
-# the repo (see its README), and linuxdeploy's plugin lookup expects it
-# under this exact "linuxdeploy-plugin-<name>.sh" name on PATH.
-fetch_tool linuxdeploy-plugin-gtk.sh \
-	"https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh"
 fetch_tool appimagetool \
 	"https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
 
@@ -57,15 +64,37 @@ cp "$bin_path" "$appdir/usr/bin/lethalmon-launcher"
 cp build/appicon.png "$appdir/lethalmon-launcher.png"
 cp build/linux/lethalmon-launcher.desktop "$appdir/lethalmon-launcher.desktop"
 
+# linuxdeploy bundles every shared library the executable links against by
+# default, which would pull GTK3/WebKit2GTK-4.1 and their entire dependency
+# graph straight back in even without --plugin gtk. Each pattern below keeps
+# one whole graph out — GTK/GLib's own stack, WebKit's, and the widget/text
+# rendering libraries both depend on (Pango, Cairo, ATK, GdkPixbuf, HarfBuzz)
+# — so nothing from it is bundled and nothing from it can end up mismatched
+# against the system copies loaded alongside it at runtime (see the header
+# comment for why a partial exclude reproduces the same bug this fixes).
+exclude_libs=(
+	'libgtk-3*' 'libgdk-3*' 'libgdk_pixbuf*'
+	'libglib-2.0*' 'libgobject-2.0*' 'libgio-2.0*' 'libgmodule-2.0*' 'libgthread-2.0*'
+	'libpango*' 'libcairo*' 'libatk*' 'libatspi*' 'libepoxy*'
+	'libharfbuzz*' 'libfribidi*'
+	'libwebkit2gtk-4.1*' 'libjavascriptcoregtk-4.1*' 'libsoup-3.0*' 'libwoff2*'
+	'libnotify*' 'libsecret-1*'
+	'libgstreamer*' 'libgst*'
+)
+exclude_args=()
+for pattern in "${exclude_libs[@]}"; do
+	exclude_args+=(--exclude-library "$pattern")
+done
+
 work_dir="$(mktemp -d)"
 (
 	cd "$work_dir"
-	DEPLOY_GTK_VERSION=3 linuxdeploy \
+	linuxdeploy \
 		--appdir "$appdir" \
 		--executable "$appdir/usr/bin/lethalmon-launcher" \
 		--desktop-file "$appdir/lethalmon-launcher.desktop" \
 		--icon-file "$appdir/lethalmon-launcher.png" \
-		--plugin gtk \
+		"${exclude_args[@]}" \
 		--output appimage
 )
 

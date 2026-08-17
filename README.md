@@ -48,6 +48,29 @@ own releases here for self-updates.
   team page, and a multi-language interface (French, English, Italian).
 - A hidden dino-run-style mini-game, unlocked from the home page for fun.
 
+## Running on Linux
+
+The `.AppImage` release doesn't bundle GTK3 or WebKit2GTK — it links against
+whatever the host already has, so those need to be installed system-wide
+before it will start:
+
+```
+# Arch / Manjaro
+sudo pacman -S gtk3 webkit2gtk-4.1
+
+# Debian / Ubuntu
+sudo apt install libgtk-3-0 libwebkit2gtk-4.1-0
+
+# Fedora
+sudo dnf install gtk3 webkit2gtk4.1
+```
+
+Without them the AppImage fails to start with a "cannot open shared object
+file" error naming the missing library. See `tools/build-appimage.sh` for
+why these aren't bundled — an earlier build that bundled its own copy of the
+GTK/WebKit stack shipped with a blank grey window on some systems, caused by
+that bundled copy mixing at runtime with the system's own GTK session/theme.
+
 ## How it works
 
 The launcher is a [Wails v2](https://wails.io) desktop app (Go backend,

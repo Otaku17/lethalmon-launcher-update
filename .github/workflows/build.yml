@@ -48,12 +48,12 @@ jobs:
           name: lethalmon-launcher-windows
           path: build/bin/*.exe
 
-  # Builds and packages the Linux target as an AppImage, bundling GTK3 and
-  # WebKit2GTK (via linuxdeploy) so it runs on any distro without those
-  # needing to be preinstalled — the game itself still requires the player to
-  # install Wine separately (see the "wine required" flow in HomePage.tsx),
-  # but that's a per-game runtime choice, not something this build step can
-  # bundle the way it can for its own GTK/WebKit dependency.
+  # Builds and packages the Linux target as an AppImage. It links against the
+  # host's own GTK3/WebKit2GTK-4.1 (see tools/build-appimage.sh for why those
+  # aren't bundled), the same way the game itself requires the player to
+  # install Wine separately (see the "wine required" flow in HomePage.tsx) —
+  # both are per-system runtime dependencies, not something this build step
+  # bundles.
   build-linux:
     runs-on: ubuntu-latest
 
