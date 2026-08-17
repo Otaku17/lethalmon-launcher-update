@@ -8,7 +8,7 @@
 // to test genuinely private behaviour has to live in backend/ instead.
 //
 // A few files here are behind a windows build tag. Those are the ones most
-// worth running — Authenticode verification, the self-update file swap, the
-// process-filter quoting — and they are silently skipped on other platforms,
-// so run the suite on Windows before trusting a green result.
+// worth running — VC++ Redistributable detection, the self-update file swap,
+// the process-filter quoting — and they are silently skipped on other
+// platforms, so run the suite on Windows before trusting a green result.
 package tests

@@ -15,34 +15,6 @@ func hideWindow(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 }
 
-// runElevated launches exePath with args under UAC elevation (the "runas"
-// verb) and waits for it to exit, exposing its exit code the same way a
-// plain exec.Cmd.Run would (nil on 0, *exec.ExitError otherwise). Needed for
-// installers like vc_redist.x64.exe that are manifested
-// requireAdministrator: launching those via a plain CreateProcess (what
-// exec.Command does) fails immediately with ERROR_ELEVATION_REQUIRED when
-// this app itself isn't running elevated, instead of prompting the user for
-// consent the way double-clicking the installer would.
-func runElevated(exePath string, args ...string) error {
-	quotedArgs := make([]string, len(args))
-	for i, arg := range args {
-		quotedArgs[i] = "'" + strings.ReplaceAll(arg, "'", "''") + "'"
-	}
-	argList := ""
-	if len(args) > 0 {
-		argList = " -ArgumentList @(" + strings.Join(quotedArgs, ",") + ")"
-	}
-
-	script := fmt.Sprintf(
-		"$p = Start-Process -FilePath '%s'%s -Verb RunAs -WindowStyle Hidden -Wait -PassThru; exit $p.ExitCode",
-		strings.ReplaceAll(exePath, "'", "''"), argList,
-	)
-
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", script)
-	hideWindow(cmd)
-	return cmd.Run()
-}
-
 // GameProcessFilter builds a PowerShell Where-Object expression matching
 // processes by image name AND install directory (via ExecutablePath), so a
 // same-named process running elsewhere on the machine (e.g. an unrelated

@@ -121,15 +121,15 @@ func (a *App) LaunchGame() error {
 		return err
 	}
 
-	// Best-effort: a failed check/install (offline, blocked download, UAC
-	// prompt declined) isn't fatal here — it just means the launch attempt
-	// below may fail exactly as it would have without this call. But it's
-	// reported via vcRedistProgressEvent (stage "failed") so the frontend
-	// can at least tell the player why, instead of leaving them to guess
-	// after the game crashes with a bare "VCRUNTIME140.dll is missing"
-	// system dialog.
+	// Mirrors ErrWineNotFound on Linux (see newGameCommand): the Visual C++
+	// Redistributable is a system-level component the player installs
+	// themselves rather than one this app fetches and runs an elevated
+	// installer for, so a missing/broken runtime fails the launch outright —
+	// with ErrVCRedistNotFound for the frontend to guide the player through
+	// installing it — instead of continuing into a bare "VCRUNTIME140.dll is
+	// missing" system dialog.
 	if err := a.ensureVCRedist(); err != nil {
-		wailsruntime.EventsEmit(a.ctx, vcRedistProgressEvent, vcRedistProgress{Stage: "failed", Error: err.Error()})
+		return err
 	}
 
 	if err := StampLauncherEdition(installDir); err != nil {

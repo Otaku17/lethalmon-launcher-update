@@ -50,15 +50,16 @@ const WINE_INSTALL_COMMANDS = [
 
 const WINE_DOWNLOAD_URL = 'https://www.winehq.org/download';
 
+// Microsoft's permanent redirect to the latest x64 Visual C++
+// Redistributable installer (2015-2022 line) — what the game's bundled Ruby
+// runtime needs (VCRUNTIME140.dll, msvcp140.dll). The launcher no longer
+// downloads or runs this itself (see backend/app_vcredist_windows.go); the
+// player installs it, the same way they install wine themselves on Linux.
+const VCREDIST_DOWNLOAD_URL = 'https://aka.ms/vs/17/release/vc_redist.x64.exe';
+
 interface DownloadProgress {
   stage: 'downloading' | 'extracting' | 'done';
   percent: number;
-}
-
-interface VCRedistProgress {
-  stage: 'downloading' | 'installing' | 'done' | 'failed';
-  percent: number;
-  error?: string;
 }
 
 function HomePage() {
@@ -71,8 +72,8 @@ function HomePage() {
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [installPathError, setInstallPathError] = useState<string | null>(null);
   const [showKillConfirm, setShowKillConfirm] = useState(false);
-  const [vcRedistProgress, setVcRedistProgress] = useState<VCRedistProgress | null>(null);
   const [showWineModal, setShowWineModal] = useState(false);
+  const [showVCRedistModal, setShowVCRedistModal] = useState(false);
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const logoClicks = useRef(0);
@@ -91,24 +92,20 @@ function HomePage() {
     });
   }, []);
 
-  useEffect(() => {
-    return EventsOn('game:vcredist-progress', (data: VCRedistProgress) => {
-      setVcRedistProgress(data);
-    });
-  }, []);
-
   async function handleLaunch() {
-    setVcRedistProgress(null);
     try {
       await LaunchGame();
       if (!multiInstance) setRunning(true);
     } catch (err) {
-      // wine_not_found (Linux only, the game ships a Windows build) is the
-      // one launch failure worth surfacing: it means the player can't run
-      // the game at all until they install wine, as opposed to a transient
-      // failure that's better left silent like the rest of this handler
-      // treats errors.
-      if (errorMessage(err) === 'wine_not_found') setShowWineModal(true);
+      // wine_not_found (Linux, the game ships a Windows build) and
+      // vcredist_not_found (Windows, missing Visual C++ Redistributable) are
+      // the launch failures worth surfacing: either means the player can't
+      // run the game at all until they install the missing piece themselves,
+      // as opposed to a transient failure that's better left silent like the
+      // rest of this handler treats errors.
+      const message = errorMessage(err);
+      if (message === 'wine_not_found') setShowWineModal(true);
+      else if (message === 'vcredist_not_found') setShowVCRedistModal(true);
     }
   }
 
@@ -325,13 +322,35 @@ function HomePage() {
               );
             })}
           </ul>
-          <p className="wine-modal-other">
+          <p className="modal-link-row">
             {t('home.wine.otherDistro')}{' '}
-            <button type="button" className="wine-modal-link" onClick={() => BrowserOpenURL(WINE_DOWNLOAD_URL)}>
+            <button type="button" className="modal-link" onClick={() => BrowserOpenURL(WINE_DOWNLOAD_URL)}>
               {t('home.wine.otherDistroLink')}
             </button>
           </p>
           <p>{t('home.wine.modalOutro')}</p>
+        </Modal>
+      )}
+
+      {showVCRedistModal && (
+        <Modal
+          variant="close"
+          eyebrow={t('home.vcRedist.modalEyebrow')}
+          title={t('home.vcRedist.modalTitle')}
+          open={showVCRedistModal}
+          onClose={() => setShowVCRedistModal(false)}
+        >
+          <p>{t('home.vcRedist.modalIntro')}</p>
+          <p className="modal-link-row">
+            <button
+              type="button"
+              className="modal-link"
+              onClick={() => BrowserOpenURL(VCREDIST_DOWNLOAD_URL)}
+            >
+              {t('home.vcRedist.download')}
+            </button>
+          </p>
+          <p>{t('home.vcRedist.modalOutro')}</p>
         </Modal>
       )}
 
@@ -351,26 +370,6 @@ function HomePage() {
           </div>,
           document.body,
         )}
-
-      {vcRedistProgress &&
-        (vcRedistProgress.stage === 'downloading' || vcRedistProgress.stage === 'installing') &&
-        createPortal(
-          <div className="home-download-overlay">
-            <div className="home-download-box">
-              <Progress
-                label={t(`home.vcRedist.${vcRedistProgress.stage}`)}
-                value={vcRedistProgress.percent}
-              />
-            </div>
-          </div>,
-          document.body,
-        )}
-
-      {vcRedistProgress?.stage === 'failed' && (
-        <p className="home-download-error">
-          {t('home.vcRedist.failed', { error: vcRedistProgress.error })}
-        </p>
-      )}
 
       {showEasterEgg && <EasterEggRunner onClose={() => setShowEasterEgg(false)} />}
     </div>

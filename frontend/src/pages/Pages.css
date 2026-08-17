@@ -142,11 +142,11 @@
   color: var(--text-dim);
 }
 
-.wine-modal-other {
+.modal-link-row {
   margin-top: 4px;
 }
 
-.wine-modal-link {
+.modal-link {
   background: none;
   border: none;
   padding: 0;
@@ -155,7 +155,7 @@
   cursor: pointer;
 }
 
-.wine-modal-link:hover {
+.modal-link:hover {
   text-decoration: underline;
 }
 

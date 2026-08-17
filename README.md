@@ -31,9 +31,10 @@ own releases here for self-updates.
 - Choose or change the install location at any time; uninstalling clears
   the game files while preserving save data (`Saves/`, hall of fame,
   Pokédex).
-- Auto-installs the Visual C++ Redistributable (VCRUNTIME140/msvcp140) on
-  first launch if missing, instead of leaving players stuck on a bare
-  "DLL is missing" system dialog.
+- Detects a missing or broken Visual C++ Redistributable (VCRUNTIME140/
+  msvcp140) before launch and points players to the official Microsoft
+  installer, instead of leaving them stuck on a bare "DLL is missing"
+  system dialog  the same self-install approach used for Wine on Linux.
 - Game settings (resolution, language, volume, auto-save, and more) linked
   directly to the game's own `.gameopts` file, so the launcher and the
   game are always in sync.
@@ -57,10 +58,6 @@ limited to a small, fixed set of destinations:
   and launcher's release lists/changelogs, and downloads game/launcher
   update artifacts as plain `.zip`/`.exe` assets attached to public
   releases.
-- **`aka.ms`**  Microsoft's own permanent redirect used to fetch the
-  official Visual C++ Redistributable installer when it's missing; the
-  downloaded installer's Authenticode signature is verified (must be
-  validly signed by "Microsoft Corporation") before it's ever executed.
 - **`api.lethalmon-fangame.com`**  a WebSocket connection for the live
   online player count.
 
@@ -83,9 +80,8 @@ backend/                    Everything the launcher actually does (package backe
   app_gpu_*.go                    GPU detection / per-app GPU preference (Windows-only)
   app_install.go                   Move/uninstall the game install
   app_launcher_update*.go           Self-update check, download, verify, apply
-  app_vcredist_*.go                  VC++ Redistributable auto-install (Windows-only)
+  app_vcredist_*.go                  VC++ Redistributable detection (Windows-only)
   app_exec_*.go                       OS-specific process helpers
-  authenticode_windows.go       WinVerifyTrust signature check (used by app_vcredist_*)
   releases.go                   GitHub Releases API client (game + launcher update checks)
   version.go                    The launcher's own version, injected by main.go
 tests/                      Test suite (package tests), run by `go test ./...`  see Testing

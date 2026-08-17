@@ -57,9 +57,11 @@
       "installing": "INSTALLATION"
     },
     "vcRedist": {
-      "downloading": "TÉLÉCHARGEMENT DES COMPOSANTS REQUIS",
-      "installing": "INSTALLATION DES COMPOSANTS REQUIS",
-      "failed": "Installation des composants requis (Visual C++) échouée : {{error}}. Si une fenêtre de confirmation Windows est apparue, acceptez-la pour permettre l'installation, puis relancez le jeu. Vous pouvez aussi l'installer manuellement depuis https://aka.ms/vs/17/release/vc_redist.x64.exe."
+      "modalEyebrow": "// LANCEMENT_IMPOSSIBLE",
+      "modalTitle": "Runtime Visual C++ requis",
+      "modalIntro": "Le jeu a besoin du Visual C++ Redistributable de Microsoft pour fonctionner, et il n'est pas installé sur ce PC (ou l'installation est corrompue).",
+      "modalOutro": "Une fois l'installation terminée, relancez le jeu.",
+      "download": "Télécharger le Visual C++ Redistributable"
     },
     "wine": {
       "modalEyebrow": "// LANCEMENT_IMPOSSIBLE",
