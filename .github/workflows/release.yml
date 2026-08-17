@@ -11,7 +11,9 @@ name: Release
 # of the same automation that publishes the build.
 #
 # A tag with a "-suffix" (v1.11.0-beta, 1.11.0-rc1, ...) publishes as a
-# draft pre-release instead of a public one — see the prepare job below.
+# public pre-release instead of a full release — see the prepare job below.
+# Flipping it from pre-release to a full release later (via the GitHub UI)
+# does not rebuild anything; it reuses the artifacts already uploaded here.
 #
 # Required repository secret:
 #   LAUNCHER_UPDATE_PRIVATE_KEY — contents of launcher_update_private.key
@@ -23,7 +25,7 @@ on:
   push:
     tags:
       # Both tag styles the repo has used so far ("v1.0.4" and "1.0.3"), plus
-      # a "-suffix" for draft pre-releases ("v1.11.0-beta").
+      # a "-suffix" for pre-releases ("v1.11.0-beta").
       - "v*"
       - "[0-9]*"
 
@@ -86,14 +88,17 @@ jobs:
 
           args=(--title "$GITHUB_REF_NAME" --generate-notes)
           if [ "${{ steps.version.outputs.prerelease }}" = "true" ]; then
-            # This repo is public, so a plain "pre-release" flag alone
-            # wouldn't hide anything from anyone — only a draft does: drafts
-            # are only visible to people with write access to the repo, and
-            # the launcher's own changelog/update-check (fetchReleases in
-            # releases.go) can't see them either, since it queries the
-            # GitHub API unauthenticated.
-            args+=(--draft --prerelease)
-            echo "Tag has a pre-release suffix — creating a draft pre-release (hidden from the public until manually published)."
+            # Published directly as a public pre-release, not a draft: the
+            # launcher's own version checks (GetGameVersionCheck /
+            # GetLauncherVersionCheck, via backend.LatestStableRelease) skip
+            # any release with "prerelease": true, so this is never offered
+            # as an update even though it's publicly visible. That's what
+            # lets it go public immediately instead of waiting on someone to
+            # manually un-draft it — flipping it to a full release later
+            # (unchecking "pre-release" in the GitHub UI) is what makes
+            # LatestStableRelease start picking it up.
+            args+=(--prerelease)
+            echo "Tag has a pre-release suffix — creating a public pre-release."
           fi
           gh release create "$GITHUB_REF_NAME" "${args[@]}"
 
