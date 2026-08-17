@@ -31,6 +31,7 @@ type Release struct {
 	Body        string         `json:"body"`
 	PublishedAt time.Time      `json:"published_at"`
 	HTMLURL     string         `json:"html_url"`
+	Prerelease  bool           `json:"prerelease"`
 	Assets      []ReleaseAsset `json:"assets"`
 }
 
@@ -91,6 +92,22 @@ func (a *App) GetLauncherReleases() ([]Release, error) {
 	return fetchReleases(launcherReleasesRepo)
 }
 
+// LatestStableRelease returns the newest entry in releases that isn't a
+// pre-release, or false if there isn't one. releases is expected newest
+// first, as fetchReleases returns it, but this doesn't assume the first
+// entry qualifies: the GitHub API includes published (non-draft)
+// pre-releases in the same listing, ahead of the last real release, so
+// skipping them here is what keeps a beta tag from being offered to
+// everyone as the stable update.
+func LatestStableRelease(releases []Release) (Release, bool) {
+	for _, r := range releases {
+		if !r.Prerelease {
+			return r, true
+		}
+	}
+	return Release{}, false
+}
+
 // GetGameVersionCheck compares the installed game version (from
 // version.txt) against the game's latest GitHub release, so the launcher
 // can prompt the user to update.
@@ -104,11 +121,11 @@ func (a *App) GetGameVersionCheck() (GameVersionCheck, error) {
 	if err != nil {
 		return GameVersionCheck{}, err
 	}
-	if len(releases) == 0 {
+	latestRelease, ok := LatestStableRelease(releases)
+	if !ok {
 		return GameVersionCheck{CurrentVersion: current}, nil
 	}
 
-	latestRelease := releases[0]
 	latest := TrimVersion(latestRelease.TagName)
 
 	return GameVersionCheck{

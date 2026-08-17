@@ -109,6 +109,36 @@ func TestParseVersionParts(t *testing.T) {
 	}
 }
 
+// TestLatestStableRelease pins the behavior that keeps a published (i.e.
+// non-draft) pre-release from being offered as the stable update: the
+// GitHub releases API lists pre-releases in the same newest-first feed as
+// real releases, ahead of the last real one, so the launcher has to skip
+// over them itself.
+func TestLatestStableRelease(t *testing.T) {
+	releases := []backend.Release{
+		{TagName: "v1.5.0-beta", Prerelease: true},
+		{TagName: "v1.4.0", Prerelease: false},
+		{TagName: "v1.3.0", Prerelease: false},
+	}
+
+	got, ok := backend.LatestStableRelease(releases)
+	if !ok {
+		t.Fatal("backend.LatestStableRelease() = false, want true")
+	}
+	if got.TagName != "v1.4.0" {
+		t.Errorf("backend.LatestStableRelease() = %q, want %q", got.TagName, "v1.4.0")
+	}
+
+	if _, ok := backend.LatestStableRelease(nil); ok {
+		t.Error("backend.LatestStableRelease(nil) = true, want false")
+	}
+
+	onlyPrerelease := []backend.Release{{TagName: "v2.0.0-rc1", Prerelease: true}}
+	if _, ok := backend.LatestStableRelease(onlyPrerelease); ok {
+		t.Error("backend.LatestStableRelease(only pre-releases) = true, want false")
+	}
+}
+
 func TestPickGameDownloadURL(t *testing.T) {
 	assets := []backend.ReleaseAsset{
 		{Name: "changelog.md", BrowserDownloadURL: "https://example.test/changelog.md"},

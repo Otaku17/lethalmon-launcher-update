@@ -102,11 +102,11 @@ func (a *App) GetLauncherVersionCheck() (LauncherVersionCheck, error) {
 	if err != nil {
 		return LauncherVersionCheck{}, err
 	}
-	if len(releases) == 0 {
+	latestRelease, ok := LatestStableRelease(releases)
+	if !ok {
 		return LauncherVersionCheck{CurrentVersion: current}, nil
 	}
 
-	latestRelease := releases[0]
 	latest := TrimVersion(latestRelease.TagName)
 
 	downloadURL, signatureURL := PickLauncherAssets(latestRelease.Assets)
